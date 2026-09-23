@@ -62,7 +62,7 @@ class CodexSession {
       cwd: this.cwd, model: this.settings.model, serviceTier: this.settings.fast ? 'fast' : 'default',
       permissions: 'codex-explain', approvalPolicy: 'never', ephemeral: true,
       config: this.threadConfig, baseInstructions: instructions,
-      developerInstructions: '仅依据用户消息中的代码材料进行讲解。禁止任何工具调用和学习进度操作。',
+      developerInstructions: '仅依据用户消息中的代码材料进行讲解。禁止任何工具调用。',
       environments: []
     }, 60000);
     return result.thread.id;
