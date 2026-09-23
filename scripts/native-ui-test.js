@@ -1,0 +1,68 @@
+'use strict';
+const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
+const net = require('node:net');
+const assert = require('node:assert/strict');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+(async () => {
+  const root = path.resolve(__dirname, '..');
+  const directory = path.join(root, 'artifacts/native-ui');
+  await fs.mkdir(directory, { recursive: true });
+  for (const filename of ['ready', 'done', 'notes.md']) await fs.rm(path.join(directory, filename), { force: true });
+  const listener = net.createServer();
+  await new Promise(resolve => listener.listen(0, '127.0.0.1', resolve));
+  const port = listener.address().port;
+  await new Promise(resolve => listener.close(resolve));
+  const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
+  const executable = path.join(process.env.LOCALAPPDATA, 'Programs/Microsoft VS Code/Code.exe');
+  const log = fsSync.openSync(path.join(directory, 'host.log'), 'w');
+  const child = spawn(executable, [`--user-data-dir=${path.join(root, 'artifacts/native-profile')}`, `--extensions-dir=${path.join(root, 'artifacts/host-extensions')}`, `--extensionDevelopmentPath=${root}`, `--extensionTestsPath=${path.join(root, 'test/native-ui-host.js')}`, `--remote-debugging-port=${port}`, '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes', '--disable-updates', '--disable-gpu'], { env, windowsHide: true, stdio: ['ignore', log, log] });
+  fsSync.closeSync(log);
+  const exit = new Promise(resolve => child.on('exit', resolve));
+  let browser;
+  try {
+    const deadline = Date.now() + 60000;
+    let ready = false;
+    while (Date.now() < deadline && child.exitCode === null) { try { await fs.access(path.join(directory, 'ready')); ready = true; break; } catch {} await wait(300); }
+    assert.ok(ready, 'extension host ready');
+    browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+    const page = browser.contexts().flatMap(context => context.pages()).find(page => page.url().includes('workbench'));
+    assert.ok(page, 'isolated VS Code renderer found');
+    const hover = page.locator('.monaco-hover').filter({ hasText: 'Codex 代码讲解' }).last();
+    await hover.waitFor({ state: 'visible' });
+    await page.waitForFunction(() => [...document.querySelectorAll('.monaco-hover')].some(el => el.textContent.includes('Codex 代码讲解') && !el.querySelector('.loading')));
+    await hover.locator('a').filter({ hasText: '保存笔记' }).waitFor();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(root, 'artifacts/native-hover.png') });
+    await hover.locator('a').filter({ hasText: /^\s*追问\s*$/ }).click();
+    const input = page.locator('.quick-input-widget input').first();
+    await input.fill('参数 name 可以改名吗？'); await input.press('Enter');
+    await hover.getByText('可以改名。', { exact: false }).waitFor();
+    await hover.locator('a').filter({ hasText: '引用片段追问' }).click();
+    await input.press('Enter');
+    await page.locator('.quick-input-title').filter({ hasText: '引用片段追问' }).waitFor();
+    await input.fill('再简要说明这个来源。'); await input.press('Enter');
+    await hover.getByText('再简要说明这个来源。', { exact: false }).waitFor();
+    await hover.locator('a').filter({ hasText: '设置' }).click();
+    await input.fill('思考强度'); await input.press('Enter');
+    await input.fill('low'); await input.press('Enter');
+    await hover.getByText('ui-test / low', { exact: false }).waitFor();
+    await hover.locator('a').filter({ hasText: '保存笔记' }).click();
+    await hover.getByText('精简笔记已保存。', { exact: false }).waitFor();
+    assert.ok((await fs.readFile(path.join(directory, 'notes.md'), 'utf8')).includes('### 来源'));
+    const calls = JSON.parse(await fs.readFile(path.join(directory, 'calls.json'), 'utf8'));
+    assert.equal(calls.length, 4);
+    assert.ok(calls[2].prompt.includes('用户从你的讲解中引用'));
+    assert.equal(calls[3].settings.effort, 'low');
+    await fs.writeFile(path.join(directory, 'result.json'), JSON.stringify({ nativeHover: true, followup: true, quote: true, settings: true, notes: true, calls: calls.length }, null, 2));
+    console.log('PASS: 原生 Hover 实际点击追问、引用片段、修改思考强度和保存笔记；截图已生成。');
+  } finally {
+    await fs.writeFile(path.join(directory, 'done'), 'done');
+    await Promise.race([exit, wait(10000)]);
+    if (child.exitCode === null) child.kill();
+    await browser?.close().catch(() => {});
+  }
+})().catch(error => { console.error(error.message); process.exitCode = 1; });

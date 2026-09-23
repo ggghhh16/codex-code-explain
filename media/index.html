@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="{{CSP}}"><title>Codex 代码讲解</title><link rel="stylesheet" href="{{STYLE}}"></head>
+<body>
+  <div class="canvas-label"><span class="brand-mark">C</span> CODEX <span class="divider">/</span> 代码讲解 <span class="quiet">留在代码里，弄清楚这一处。</span></div>
+  <main id="window" aria-label="代码讲解窗口">
+    <header id="dragbar"><div class="heading"><span class="live-dot"></span><strong>这一段，讲清楚</strong><span id="model-badge">连接中</span></div><div class="toolbar">
+      <button id="save" class="icon" title="保存精简笔记" aria-label="保存精简笔记"><svg viewBox="0 0 24 24"><path d="M6 21V4m0 0c4-3 8 3 12 0v10c-4 3-8-3-12 0"/></svg></button>
+      <button id="settings-toggle" class="icon" aria-label="功能设置" aria-expanded="false" title="功能设置"><svg viewBox="0 0 24 24"><path d="m9 3-.6 2.2-2 .9-2-.6-2 3.5L4 10.6v2.8L2.4 15l2 3.5 2-.6 2 .9L9 21h4l.6-2.2 2-.9 2 .6 2-3.5-1.6-1.6v-2.8L19.6 9l-2-3.5-2 .6-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg></button>
+    </div></header>
+    <div class="source-strip"><button id="source" title="返回源码"><span>↗</span> <span id="source-name">正在获取选区</span></button><button id="context-toggle" aria-expanded="false">上下文 <span id="context-count"></span></button></div>
+    <details id="context"><summary>发送给 Codex 的代码依据</summary><pre id="context-content"></pre></details>
+    <div id="conversation" tabindex="0" aria-label="讲解与追问"><div class="empty"><span class="empty-symbol">{ }</span><h2>从这一处开始理解</h2><p>先找到来源，再看结构和当前用法。</p></div></div>
+    <button id="quote-action" hidden>＋ 引用追问</button>
+    <div id="status" role="status" aria-live="polite">正在准备讲解…</div>
+    <div id="error" role="alert" hidden><span></span><button id="retry">重试回答</button></div>
+    <form id="composer"><div id="quote-chip" hidden><span class="quote-label">引用讲解</span><span id="quote-text"></span><button type="button" id="clear-quote" aria-label="移除引用">×</button></div><textarea id="question" rows="2" placeholder="接着问，例如：这个参数是谁传进来的？" aria-label="追问内容"></textarea><div class="composer-bottom"><span>选中讲解文字可引用追问 <kbd>Ctrl ↵</kbd></span><button id="stop" type="button" hidden>■ 停止</button><button id="send" type="submit">发送 <span>↗</span></button></div></form>
+    <div class="resize nw" data-corner="nw" aria-hidden="true"></div><div class="resize ne" data-corner="ne" aria-hidden="true"></div><div class="resize sw" data-corner="sw" aria-hidden="true"></div><div class="resize se" data-corner="se" aria-hidden="true"></div>
+  </main>
+  <aside id="settings" hidden aria-label="功能设置"><div class="settings-heading"><strong>功能设置</strong><button id="settings-close" class="icon" aria-label="关闭设置">×</button></div><p class="settings-intro">仅影响接下来的提问</p><label for="model">模型</label><select id="model"></select><div class="effort-heading"><label for="effort">思考强度</label><output id="effort-name"></output></div><input type="range" id="effort" min="0" max="0" step="1" value="0"><div id="effort-ticks"></div><p id="effort-description"></p><button id="fast" role="switch" aria-checked="false"><span><svg viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-7Z"/></svg> 快速模式</span><i></i></button><p id="fast-description">按当前模型的支持情况显示</p><div class="settings-rule"></div><label>Markdown 笔记</label><p id="notes-path">尚未设置路径</p><button id="open-settings">设置笔记路径 <span>↗</span></button><p class="note-hint">点击旗帜，整理来源、结构、用法并追加保存。</p></aside>
+  <div class="canvas-footer">选区独立对话 <span>·</span> 来源可核对 <span>·</span> 笔记按需保存</div>
+  <script nonce="{{NONCE}}" src="{{SCRIPT}}"></script>
+</body></html>

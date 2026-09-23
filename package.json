@@ -1,0 +1,35 @@
+{
+  "name": "codex-code-explain",
+  "displayName": "Codex 代码讲解",
+  "description": "选中代码，用 Codex 解释来源、结构和用法，局部追问并保存 Markdown 笔记。",
+  "version": "0.2.1",
+  "repository": { "type": "git", "url": "https://github.com/ggghhh16/codex-code-explain.git" },
+  "homepage": "https://github.com/ggghhh16/codex-code-explain#readme",
+  "bugs": { "url": "https://github.com/ggghhh16/codex-code-explain/issues" },
+  "publisher": "local-learning",
+  "license": "MIT",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Education", "Other"],
+  "main": "./src/extension.js",
+  "extensionKind": ["workspace"],
+  "capabilities": { "untrustedWorkspaces": { "supported": false }, "virtualWorkspaces": false },
+  "activationEvents": ["onCommand:codexExplain.explain"],
+  "scripts": { "test": "node --test test/*.test.js", "package": "python scripts/package.py" },
+  "contributes": {
+    "commands": [
+      { "command": "codexExplain.explain", "title": "用 Codex 解释", "category": "Codex 代码讲解" },
+      { "command": "codexExplain.explainInPanel", "title": "在并排面板中解释（旧版界面）", "category": "Codex 代码讲解" },
+      { "command": "codexExplain.settings", "title": "打开插件设置", "category": "Codex 代码讲解" }
+    ],
+    "menus": { "editor/context": [{ "command": "codexExplain.explain", "when": "editorHasSelection && isWorkspaceTrusted", "group": "navigation@20" }] },
+    "configuration": {
+      "title": "Codex 代码讲解",
+      "properties": {
+        "codexExplain.notesPath": { "type": "string", "default": "", "scope": "resource", "markdownDescription": "Markdown 笔记文件的绝对路径，或相对于当前代码所属工作区的路径，例如 `notes/代码讲解.md`。留空时首次保存会弹出文件选择器。只追加，不覆盖原文。" },
+        "codexExplain.codexPath": { "type": "string", "default": "", "scope": "machine", "description": "Codex 可执行文件路径。留空时自动查找 PATH、Codex 桌面版及官方 VS Code 扩展附带的程序。" },
+        "codexExplain.contextLines": { "type": "integer", "default": 35, "minimum": 0, "maximum": 150, "description": "选区前后各附带的代码行数。" },
+        "codexExplain.maxContextCharacters": { "type": "integer", "default": 24000, "minimum": 4000, "maximum": 80000, "description": "选区、附近代码和语言服务结果的总字符上限。超出时明确标注截断。" }
+      }
+    }
+  }
+}

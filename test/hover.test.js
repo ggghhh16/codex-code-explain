@@ -1,0 +1,30 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { safeMarkdown, commandLink, quoteChoices, completedMessages } = require('../src/hover-content');
+
+test('model markdown cannot produce executable links or remote images; code syntax stays exact', () => {
+  const text = '[run](command:codexExplain.hover.save) ![x](https://example.com/x) <img src=x>\n`data[0]`\n```js\nconst a = data[0];\n```';
+  const safe = safeMarkdown(text);
+  assert.ok(!safe.includes('[run]'));
+  assert.ok(!safe.includes('![x]'));
+  assert.ok(!safe.includes('<img'));
+  assert.ok(safe.includes('`data[0]`'));
+  assert.ok(safe.includes('const a = data[0];'));
+  assert.ok(!safeMarkdown('`unterminated ![x](https://example.com/x)').includes('![x]'));
+});
+test('trusted action URI carries only the opaque session id', () => {
+  const link = commandLink('保存', 'codexExplain.hover.save', 'id/中文');
+  const encoded = link.match(/\?([^)]*)/)[1];
+  assert.deepEqual(JSON.parse(decodeURIComponent(encoded)), ['id/中文']);
+});
+test('quote and note exclude unfinished answers and unanswered questions', () => {
+  const messages = [
+    { role: 'user', text: '解释', complete: true },
+    { role: 'assistant', text: '来源：项目。\n\n用法：传入参数。', complete: true },
+    { role: 'user', text: '新的追问', complete: true },
+    { role: 'assistant', text: '未写完', complete: false }
+  ];
+  assert.equal(completedMessages(messages).length, 2);
+  assert.deepEqual(quoteChoices(messages).map(x => x.quote), ['来源：项目。', '用法：传入参数。']);
+});
