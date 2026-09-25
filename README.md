@@ -1,6 +1,6 @@
 # Codex 代码讲解
 
-独立开发的第三方 VS Code 扩展，非 OpenAI / Microsoft 官方产品。当前发布版本：**0.2.2**。
+独立开发的第三方 VS Code 扩展，非 OpenAI / Microsoft 官方产品。版本：**0.2.3**。
 
 [下载安装包](https://github.com/ggghhh16/codex-code-explain/releases/latest) · [安全与数据说明](SECURITY.md)
 
@@ -9,7 +9,7 @@
 ## 安装和使用
 
 1. 安装并登录本机 Codex CLI，或使用 Codex 桌面版附带的程序。扩展复用 Codex 登录，不保存或展示 Token。
-2. 从 Releases 下载 `codex-code-explain-0.2.2.vsix`，然后 VS Code → 扩展 → 右上角菜单 → **从 VSIX 安装**；如提示重载，执行重载窗口。
+2. 从 Releases 下载最新的 `.vsix` 安装包，然后 VS Code → 扩展 → 右上角菜单 → **从 VSIX 安装**；如提示重载，执行重载窗口。
 3. 在受信任工作区打开代码，选中一段，右键 **用 Codex 解释**。
 4. 讲解完成后，在悬停框中点击 **追问**，使用 VS Code 原生输入框提问。回答仍显示在原选区的悬停框中。
 5. 点击 **引用片段追问**，选择已完成回答中的一段，再输入问题。点击 **设置**，选择模型、思考档位或快速模式。
@@ -17,6 +17,8 @@
 7. 悬停框关闭后，将鼠标放回选区即可查看已有讲解，不重新调用模型。也可使用 VS Code 的“显示或聚焦悬停”命令（通常为 `Ctrl+K`、`Ctrl+I`）。修改源码或关闭文件会清除该文件的旧讲解。
 
 旧版并排界面保留在命令面板 **Codex 代码讲解：在并排面板中解释（旧版界面）**，只有显式执行这个命令才打开。
+
+0.2.3 起发布者标识为 `Principia`。如果安装过发布者为 `local-learning` 的早期 VSIX，请先卸载旧扩展再安装新版，避免同时出现两组命令。
 
 ## 设置
 
@@ -64,6 +66,8 @@ python scripts/package.py
 ```
 
 真实生成测试会使用本机 Codex 账户额度，仅发送脚本内置的非敏感示例代码。`host-test.js` 验证真实代码到 Codex 回答、原生 Hover 和没有新增标签页。`native-ui-test.js` 使用固定回答验证真实 VS Code 悬停框里的点击操作并生成截图；它需要 Playwright，可通过 `PLAYWRIGHT_MODULE` 指向安装目录。所有 VS Code 测试都使用隔离配置并在结束后退出。旧界面的测试脚本为 `scripts/ui-test.js`。打包脚本生成标准 VSIX。
+
+Marketplace 发布使用微软官方工具打包：`npx @vscode/vsce package --no-dependencies`。`.vscodeignore` 限定发布文件范围；提交前确认 `package.json` 中的 `publisher` 是当前账号拥有的发布者 ID。
 
 [需求评估与设计](docs/design.md) · [验证记录](docs/validation.md)
 
