@@ -1,33 +1,31 @@
-# 验证记录
+# Validation record
 
-## 0.2.0 原生悬停版
+## 0.2.0 native hover
 
-- 9 项 Node 测试通过，包括模型命令链接隔离、原始代码字符保留、引用及笔记排除未完成回答。
-- 真实 VS Code + 真实 Codex：原生 Hover 中出现回答，保留另一个语言服务 provider；断言标签页数量不变，没有 Webview。选区收集到 1 处真实定义及 1 份类型信息，未把本插件的讲解反过来当作类型依据。
-- 真实 VS Code 界面测试（固定示例回答）：点击追问、选择引用片段追问、修改思考档位、保存精简笔记，全部通过。截图 `artifacts/native-hover.png`；结果 `artifacts/native-ui/result.json`。
-- 逐字生成仍在后端接收；原生 Hover 在回答结束时刷新，不宣称具有原位输入框或自定义滑条。
+- Nine Node tests passed, including command-link isolation, preservation of source characters, and exclusion of incomplete answers from quotes and notes.
+- Real VS Code with real Codex showed an answer in native hover alongside another language-service provider. The tab count stayed the same and no Webview opened. Context contained one real definition and one type hint without treating this extension's own explanation as type evidence.
+- A real VS Code UI test with a fixed sample answer clicked Follow up, selected a quoted passage, changed reasoning effort, and saved a short note. Screenshots: `artifacts/native-hover.png`; results: `artifacts/native-ui/result.json`.
+- The backend receives streaming output, but native hover refreshes on completion. It does not have an embedded input or custom slider.
 
-以下为 0.1.0 和复用后端的验证记录。
+The following records cover 0.1.0 and the reused backend.
 
-日期：2026-09-23。目标平台：Windows、本地 VS Code 桌面版。
+Date: 2026-09-23. Target: local Windows VS Code desktop. Environment: VS Code `1.138.0`, Codex `0.155.0-alpha.16`. Live generation used the account's default `gpt-6-astra` model at `medium` reasoning effort.
 
-环境：VS Code `1.138.0`、Codex `0.155.0-alpha.16`，真实生成使用本机账户返回的默认模型 `gpt-6-astra`，思考强度 `medium`。
+## Verified
 
-## 已验证
+- Node tests covered out-of-order JSON-RPC responses, refusal of execution approval, process-exit cleanup, invalid model/effort/fast settings, early completion notifications, concurrent note appends and deduplication, and basic credential filtering.
+- Real Codex covered initialization and model catalog, streaming explanation, follow-up in the same conversation, short-note generation in a separate conversation, local append, and cancellation.
+- A real headless Edge session covered quoting an answer and asking a follow-up, fast-mode settings messages, Save messages, resizing from all four corners, settings visibility in a narrow panel, and non-execution of HTML and command links. No page-script errors were observed.
+- A real VS Code Extension Development Host covered activation, the selection command, Webview readiness, code-context collection, and a streamed response from real Codex. It used isolated configuration and exited afterward.
+- VS Code CLI successfully installed a VSIX into an isolated extension directory inside the project.
 
-- Node 自动测试：JSON-RPC 响应乱序、执行授权拒绝、进程退出清理、非法模型/思考强度/快速模式拒绝、提前完成通知、笔记并发追加与去重、基础凭据过滤。
-- 真实 Codex：初始化与模型目录、流式解释、同会话追问、独立会话生成精简笔记、本地追加、停止生成。
-- 真实 Edge 无头浏览器：引用回答并发送追问、快速模式设置消息、保存按钮消息、四个角实际缩放、窄屏设置窗保持在可视范围、输出 HTML/命令链接不执行。没有页面脚本异常。
-- 真实 VS Code 扩展开发宿主：扩展激活、选区命令、Webview ready 消息、采集代码上下文、返回真实 Codex 流式回答。测试使用独立配置并自动退出。
-- VSIX：已由 VS Code CLI 安装到项目内隔离的扩展目录，返回安装成功。
+Reproduction scripts: `test/core.test.js`, `scripts/smoke.js`, `scripts/ui-test.js`, and `test/host.js`. Raw results are under `artifacts/`. UI screenshots use sample data; real model output is separately under `artifacts/smoke-session/`.
 
-可复现脚本及原始结果：`test/core.test.js`、`scripts/smoke.js`、`scripts/ui-test.js`、`test/host.js`，原始结果在项目的 `artifacts/`。界面截图使用示例数据，真实模型输出另存于 `artifacts/smoke-session/`。
+## Not covered
 
-## 未覆盖
+- Actual billing and performance for every account, model, and fast tier. Available UI options come from the model catalog and settings are sent through the real protocol.
+- Remote SSH, WSL, Dev Containers, web VS Code, and older Codex versions.
+- Simultaneous writes to one notes file from separate VS Code windows.
+- Long-running use, very large conversations, every language, and every language service.
 
-- 每个账户、每个模型及所有快速档位的实际计费与性能；界面能力来自模型目录，设置通过实际协议发送。
-- Remote SSH、WSL、Dev Containers、网页 VS Code，以及旧 Codex 版本。
-- 多个独立 VS Code 窗口同时向同一个笔记文件写入。
-- 长时间使用、极大对话、所有编程语言及其语言服务。
-
-测试过程中修正了当前 Codex 命名权限配置与旧 `readOnly.access` 接口不兼容的问题。当前实现不在错误时自动改为更宽松权限。
+Testing exposed an incompatibility between the current named Codex permission profile and the old `readOnly.access` API. The current implementation does not broaden permissions after an error.

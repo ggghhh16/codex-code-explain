@@ -1,58 +1,58 @@
-# 需求评估与首版设计
+# Initial requirements and design
 
-> 0.2.0 更新：用户进一步明确要求原生悬停框。默认入口已经改成原生 HoverProvider；以下并排窗口设计记录属于 0.1.0，可选旧版界面仍保留。原生交互及限制以 [README](../README.md) 和 [可行性说明](native-hover-feasibility.md) 为准。
+> Updated in 0.2.0: native hover became the default after further user feedback. The side-by-side design below describes 0.1.0; the optional legacy interface remains available. See the [README](../README.md) and [feasibility notes](native-hover-feasibility.md) for current behavior and limits.
 
-## 对观察的判断
+## Problem
 
-问题主要是理解代码时缺少来源信息，以及提问入口离代码太远。项目自定义变量、辅助函数、配置和业务数据，本来就需要查看当前实现；它们不必全部进入通用知识复习。第三方接口也可以保留可检索的用法笔记。
+Understanding code often requires knowing where a name comes from, while the question interface is too far from the code. Project variables, helpers, configuration, and business data should be explained against the current implementation. Third-party APIs can also have reusable usage notes.
 
-但“只在当前项目遇到”不总等于“不可迁移”。函数引用与调用、对象共享、回调时机、数据形状等机制可能在许多项目重复出现。插件先说明当前具体行为，再用一句话区分项目选择和可迁移规则。
+A mechanism seen in only one project may still apply elsewhere: function references versus calls, shared objects, callback timing, and data shapes are examples. The extension first explains the concrete behavior, then distinguishes project choices from reusable rules.
 
-## 替代方式
+## Alternatives
 
-| 方式 | 适用内容 | 与本需求的差别 |
+| Approach | Suitable content | Gap for this use |
 | --- | --- | --- |
-| VS Code 悬停、转到定义 | 类型签名、定义位置、库注释 | 对对象传递过程和通俗解释支持有限 |
-| 已有 Codex 对话 | 综合推理、完整项目讨论 | 用户已指出需要切换窗口或另建节点 |
-| 项目 README、接口文档 | 共享约定与可长期维护的事实 | 无法自动覆盖每个临时选区与追问 |
-| 本插件 | 当前选区的有限上下文解释 | 需要维护 Codex 协议兼容与上下文准确性 |
+| VS Code hover and Go to Definition | Type signatures, definition locations, library comments | Limited plain-language explanation of object flow |
+| Existing Codex conversation | Broad reasoning and project discussion | Requires switching views or creating a separate conversation |
+| Project README and API docs | Shared conventions and maintained facts | Cannot cover each temporary selection and follow-up automatically |
+| This extension | Bounded context for the current selection | Must maintain protocol compatibility and context accuracy |
 
-## 用户已确认的范围
+## Confirmed 0.1.0 scope
 
-- 在 VS Code 并排面板内显示可拖动、四角缩放的小窗。
-- 自动发送选区、附近代码、语言服务定义和类型；不搜索整个项目。
-- 使用本机 Codex 登录，每个选区独立临时对话。
-- 底部输入框追问；选中本插件的回答后添加引用。
-- 右上角旗帜保存精简笔记，设置图标打开依附设置窗。
-- 模型目录、支持的思考档位、快速模式能力均从本机 Codex 读取。
-- 笔记文件路径保存在 VS Code 插件设置中，主动保存时追加。
+- Show a draggable, four-corner-resizable window inside a side-by-side VS Code panel.
+- Send the selection, nearby code, and language-service definitions and types without searching the entire project.
+- Use local Codex sign-in and a separate temporary conversation per selection.
+- Provide a follow-up input and allow quotes from answers rendered by this extension.
+- Save a short note through the flag button; open attached settings through the gear icon.
+- Read models, supported reasoning efforts, and fast-mode capability from local Codex.
+- Store the note path in VS Code settings and append only on an explicit save.
 
-## 重要限制与处理
+## Constraints and handling
 
-**窗口宿主限制：** 公共 Webview API 不能把完整交互界面悬浮在源码上。首版在并排面板内实现内部窗口；窄面板没有足够侧边空间时，设置窗覆盖内部窗口的一部分。关闭设置即可继续阅读。
+**Window hosting:** The public Webview API cannot float a full custom interface over source code. The initial release used an internal window in a side panel. In a narrow panel, settings may cover part of that window; closing settings restores the reading area.
 
-**来源证据不全：** 语言服务未安装、未启动或无法识别某个对象时，不虚构来源。上下文展示采集范围、文件位置与截断提示；模型仍可能判断错误，源码定义是核对依据。
+**Incomplete origin evidence:** Missing, inactive, or unsupported language services cannot establish origin. Context displays its collection scope, file positions, and truncation. Models can still be wrong; inspect source definitions to verify.
 
-**选区歧义：** 大片代码和多个符号需要更多上下文。首版限制选区长度，最多查询四个不同标识符，建议选择完整表达式或相关代码块。框架动态属性和运行时数据值可能无法通过语言服务确定。
+**Ambiguous selections:** Large selections and multiple symbols need more context. The initial release limits selection length and asks the language service about up to four distinct identifiers. Select a full expression or relevant block. Dynamic framework properties and runtime values may remain unknown.
 
-**引用范围：** 只能选中本插件自己渲染的回答。官方 Codex 扩展、Codex 桌面应用和 ThoughtDAG 的内部聊天不向本插件开放通用读取接口。
+**Quote scope:** Only this extension's rendered answers can be quoted. The official Codex extension, Codex desktop, and ThoughtDAG do not expose a general interface for this extension to read their chats.
 
-**笔记维护：** 精简记录附来源位置与时间，不代表代码以后不会改变。相同完成内容按摘要标识去重；未完成回答不作为笔记依据。文件有未保存编辑时停止追加。跨 VS Code 窗口同时写同一文件仍存在去重竞争。
+**Note maintenance:** Short notes include a source position and timestamp, not a guarantee that code will remain unchanged. Identical completed content is deduplicated by digest. Incomplete answers are excluded. Unsaved file edits block appending. Concurrent writes from separate VS Code windows can still race.
 
-**模型能力：** 不硬编码模型名或所有档位。不支持快速模式时禁用开关，避免出现只改变图标的假功能。设置只影响后续轮次。
+**Model capabilities:** Models and tiers are not hardcoded. Fast mode is unavailable when the model does not advertise it. Settings affect later turns.
 
-## 数据与实现
+## Data flow and implementation
 
 ```text
-VS Code 选区
-  → 选区快照、有限附近代码、语言服务定义/类型
-  → Codex App Server 临时会话
-  → Webview 流式讲解与引用追问
-  → 用户点击旗帜
-  → 单独临时会话压缩已完成内容
-  → 追加到指定 Markdown 文件
+VS Code selection
+  → selection snapshot, limited nearby code, language-service definitions/types
+  → temporary Codex App Server conversation
+  → streaming explanation and quoted follow-up in Webview
+  → user clicks the flag
+  → a separate temporary conversation summarizes completed content
+  → append to the chosen Markdown file
 ```
 
-模型不参与本地写笔记动作；写入由扩展在用户点击保存后执行。笔记摘要会缓存，文件写入失败后重试不必重新生成。
+The model does not perform the local file write. The extension appends after an explicit save. A generated note is cached so a failed write can be retried without another generation request.
 
-解释会话在中立目录启动，禁用继承的工具集成，使用仅允许最小平台资源和中立目录读取的命名权限配置。不会更改用户的 Codex 全局配置。实际适配版本为本机 `codex-cli 0.155.0-alpha.16`；较旧版本若不支持所需协议，明确报错，不自动放宽权限。
+Explanation conversations start in a neutral directory, disable inherited tool integrations, and use a named permission profile limited to minimal platform resources and reading that directory. Global Codex settings are not changed. The implementation was adapted to local `codex-cli 0.155.0-alpha.16`; older unsupported protocol versions produce an error rather than broader permissions.

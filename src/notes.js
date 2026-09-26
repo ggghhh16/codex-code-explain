@@ -11,17 +11,17 @@ function noteId(source, messages) {
 }
 function noteBlock(source, text, id, date = new Date()) {
   const title = `${source.file.replace(/[\r\n]/g, ' ')} · L${source.selection.startLine}–${source.selection.endLine}`;
-  return `\n\n<!-- codex-explain:${id} -->\n## ${title}\n\n> ${date.toISOString()} · 代码讲解参考笔记\n\n${redact(text.trim())}\n`;
+  return `\n\n<!-- codex-explain:${id} -->\n## ${title}\n\n> ${date.toISOString()} · Code explanation note\n\n${redact(text.trim())}\n`;
 }
 async function appendNote(filename, source, text, id) {
-  if (!/\.md$/i.test(filename)) throw new Error('笔记路径必须指向 .md 文件。');
+  if (!/\.md$/i.test(filename)) throw new Error('The note path must point to a .md file.');
   const key = path.resolve(filename);
   const previous = queues.get(key) || Promise.resolve();
   const task = previous.catch(() => {}).then(async () => {
     await fs.mkdir(path.dirname(key), { recursive: true });
     try {
       const target = await fs.lstat(key);
-      if (target.isSymbolicLink() || !target.isFile() || target.nlink > 1) throw new Error('笔记目标必须是普通文件，不能是符号链接、目录或硬链接。');
+      if (target.isSymbolicLink() || !target.isFile() || target.nlink > 1) throw new Error('The note target must be a regular file, not a symlink, directory, or hard link.');
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
     let old = '';
     try { old = await fs.readFile(key, 'utf8'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -29,7 +29,7 @@ async function appendNote(filename, source, text, id) {
     const handle = await fs.open(key, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | (constants.O_NOFOLLOW || 0), 0o600);
     try {
       const stat = await handle.stat();
-      if (!stat.isFile() || stat.nlink > 1) throw new Error('笔记目标不是独立普通文件。');
+      if (!stat.isFile() || stat.nlink > 1) throw new Error('The note target is not an independent regular file.');
       await handle.writeFile(noteBlock(source, text, id), 'utf8');
     } finally { await handle.close(); }
     return true;

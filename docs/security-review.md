@@ -1,25 +1,25 @@
-# 0.2.1 发布前检查
+# 0.2.1 pre-release review
 
-检查范围：准备提交的源码、文档、测试、调试配置以及重新生成的 VSIX。不是对所有 Codex 版本的完整安全认证。
+Scope: source, documentation, tests, debug configuration, and a freshly built VSIX prepared for release. This is not a complete security certification for all Codex versions.
 
-## 已修复
+## Fixes
 
-1. 凭据过滤补充带引号 JSON 字段、无引号环境变量、Bearer/JWT、连接串密码、私钥块及常见凭据配置文件。保留“模式识别不可能覆盖全部敏感值”的限制。
-2. 工作区外来源标签改成 `external/文件名`，不主动将用户主目录和完整本机路径用作材料的文件标签。
-3. Codex 查找忽略空和相对 PATH 项，自定义路径必须为绝对路径；继续直接启动进程而非 Shell 拼接。
-4. 笔记追加拒绝目录、直接符号链接与硬链接；在支持的平台使用 `O_NOFOLLOW`，并检查打开后的文件类型。
-5. 完善 Git 排除规则和打包文件清单，拒绝安装包中的链接文件。客户端版本从清单读取。
+1. Redaction now covers quoted JSON fields, unquoted environment variables, Bearer tokens, JWTs, connection-string passwords, private-key blocks, and common credential files. Pattern matching still cannot catch every secret.
+2. Files outside the workspace use short `external/filename` labels instead of full home-directory paths.
+3. Codex lookup ignores empty and relative PATH entries, and custom paths must be absolute. Processes are still launched directly without shell interpolation.
+4. Note appending rejects directories, direct symlinks, and hard links; it uses `O_NOFOLLOW` where available and checks the opened file type.
+5. Git exclusions and the package file list were tightened. Package links are rejected and the client version comes from the manifest.
 
-## 发布内容
+## Published content
 
-只提交源码、测试、脚本、文档和必要调试配置。测试宿主配置、日志、截图、临时笔记、生成协议、旧安装包和发布准备目录不进 Git。新 VSIX 作为 Release 附件单独发布。
+Only source, tests, scripts, documentation, and necessary debug configuration are committed. Test-host configuration, logs, screenshots, temporary notes, generated protocols, old packages, and release-preparation directories stay out of Git. New VSIX files are attached to Releases separately.
 
-公开源码中未发现真实访问令牌、私钥、登录 Cookie 或个人邮箱；测试凭据为明确的固定假数据。Git 作者使用 GitHub noreply 地址。
+The reviewed public source contained no real access tokens, private keys, sign-in cookies, or personal email addresses. Test credentials were explicitly fixed fake data. The Git author used a GitHub noreply address.
 
-## 验证
+## Verification
 
-14 项 Node 自动测试通过；包含敏感文件识别、常见密钥隐藏、外部来源标签、相对程序路径拒绝、硬链接写入拒绝，以及原有 RPC、笔记去重和 Hover 命令隔离测试。发布前另做 VSIX 清单与公开文件扫描。
+Fourteen Node tests passed, covering sensitive-file detection, common-key redaction, external-file labels, rejection of relative executables and hard-link writes, RPC behavior, note deduplication, and hover command isolation. The VSIX manifest and public files were also scanned before release.
 
-## 仍然存在的边界
+## Remaining limits
 
-模型讲解可能不准确；模式匹配不能替代人工审阅敏感源码。权限执行依赖本机 Codex 和操作系统。用户信任的第三方语言服务、Codex 可执行文件、并发修改文件的其他进程不在本扩展的隔离范围内。跨 VS Code 进程同时保存不能保证严格去重。
+Model explanations can be wrong; pattern matching does not replace human review of sensitive source. Permission enforcement depends on local Codex and the operating system. Trusted third-party language services, the Codex executable, and other processes modifying files are outside the extension's isolation. Simultaneous saves across VS Code processes cannot guarantee strict deduplication.

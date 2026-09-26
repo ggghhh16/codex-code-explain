@@ -20,7 +20,7 @@ test('outside-workspace source labels do not expose user home paths', () => {
   assert.equal(sourceLabel(api, { path: '/home/private-person/project/file.js' }), 'external/file.js');
 });
 test('relative executable paths are rejected', () => {
-  assert.throws(() => resolveCodex('./codex.exe'), /绝对路径/);
+  assert.throws(() => resolveCodex('./codex.exe'), /must be absolute/);
 });
 test('a Markdown hardlink cannot redirect note writes to another file', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'codex-note-security-'));
@@ -29,7 +29,7 @@ test('a Markdown hardlink cannot redirect note writes to another file', async ()
     await fs.writeFile(original, 'untouched');
     const link = path.join(directory, 'note.md');
     await fs.link(original, link);
-    await assert.rejects(appendNote(link, {}, 'text', 'id'), /链接/);
+    await assert.rejects(appendNote(link, {}, 'text', 'id'), /hard link/);
     assert.equal(await fs.readFile(original, 'utf8'), 'untouched');
   } finally { await fs.rm(directory, { recursive: true, force: true }); }
 });

@@ -7,9 +7,9 @@ function executable(filename) {
 }
 function resolveCodex(configured, extensions = []) {
   if (configured) {
-    if (!path.isAbsolute(configured)) throw new Error('Codex 程序路径必须是绝对路径。');
-    if (/\.(cmd|bat|ps1)$/i.test(configured)) throw new Error('请指定 Codex 原生可执行文件（Windows 为 codex.exe），不要指定脚本。');
-    if (!executable(configured)) throw new Error('设置的 Codex 程序不存在，请检查 codexExplain.codexPath。');
+    if (!path.isAbsolute(configured)) throw new Error('The Codex executable path must be absolute.');
+    if (/\.(cmd|bat|ps1)$/i.test(configured)) throw new Error('Select the native Codex executable (codex.exe on Windows), not a script.');
+    if (!executable(configured)) throw new Error('The configured Codex executable does not exist. Check codexExplain.codexPath.');
     return configured;
   }
   const binary = process.platform === 'win32' ? 'codex.exe' : 'codex';
@@ -30,6 +30,6 @@ function resolveCodex(configured, extensions = []) {
       if (executable(candidate)) return candidate;
     }
   }
-  throw new Error('未找到 Codex。请安装并登录 Codex CLI，或在插件设置中填写 codexExplain.codexPath。');
+  throw new Error('Codex was not found. Install and sign in to Codex CLI, or set codexExplain.codexPath in extension settings.');
 }
 module.exports = { resolveCodex };

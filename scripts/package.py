@@ -16,7 +16,7 @@ types = '''<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.op
 with ZipFile(output, "w", ZIP_DEFLATED) as package:
     package.writestr("extension.vsixmanifest", xml)
     package.writestr("[Content_Types].xml", types)
-    for file in [root / "package.json", root / "README.md", root / "LICENSE", root / "SECURITY.md", root / "CHANGELOG.md", *sorted((root / "src").rglob("*.js")), *sorted((root / "media").glob("*")), *sorted((root / "docs").glob("*.md"))]:
+    for file in [root / "package.json", root / "README.md", root / "README.zh-CN.md", root / "LICENSE", root / "SECURITY.md", root / "CHANGELOG.md", *sorted((root / "src").rglob("*.js")), *sorted((root / "media").glob("*")), *sorted((root / "docs").glob("*.md"))]:
         if file.is_symlink() or not file.is_file():
             raise RuntimeError(f"Refusing non-regular package entry: {file.name}")
         package.write(file, "extension/" + file.relative_to(root).as_posix())

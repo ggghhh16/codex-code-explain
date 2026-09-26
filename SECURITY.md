@@ -1,27 +1,27 @@
-# 安全与数据说明
+# Security and data handling
 
-这是独立开发的第三方 VS Code 扩展，不是 OpenAI 或 Microsoft 官方产品。
+This is an independently developed, third-party VS Code extension, not an official OpenAI or Microsoft product.
 
-## 数据发送
+## Data sent to Codex
 
-用户执行解释或追问时，选区、有限附近代码、语言服务定义/类型和当前对话会通过本机 Codex 的账户及服务提供方处理。普通悬停仅显示缓存，不发起新请求。扩展不保存或展示登录凭据，不包含独立遥测服务。
+When you request an explanation or follow-up, the selection, limited nearby code, language-service definitions and types, and current conversation are processed through your local Codex account and service provider. Ordinary hovering only displays cached results. The extension neither stores nor displays sign-in credentials and has no separate telemetry service.
 
-扩展排除常见凭据文件，并隐藏常见密钥、Bearer/JWT、连接串密码与敏感字段字面量；工作区外文件标签不包含完整本机路径。模式匹配不能发现所有敏感信息，源码中不应保留真实生产凭据。语言服务本身来自用户安装的扩展，不视为安全隔离区。
+Common credential files are excluded. Common keys, Bearer tokens, JWTs, connection-string passwords, and sensitive field literals are redacted. Labels for files outside the workspace omit full local paths. Pattern matching cannot detect every secret; do not keep production credentials in source code. Installed language services are user-controlled extensions, not a security boundary.
 
-## 执行与文件操作
+## Execution and file operations
 
-- 启动 Codex 使用直接进程参数，`shell: false`；自动查找忽略空或相对 PATH 目录，自定义程序路径必须为绝对路径。
-- 使用受限命名权限配置；关闭继承的 shell、MCP、应用集成等能力。模型指令要求仅解释所给材料。Codex 版本或管理员配置可能影响能力，接入失败时不降级为宽松权限。扩展不是独立于 Codex 的操作系统安全沙箱。
-- 模型正文不授予命令执行信任；Hover 操作栏使用独立的命令白名单。Webview 采用内容安全策略与转义渲染，不加载远程脚本。
-- 只有用户点击保存才写笔记；仅向 `.md` 普通文件追加。拒绝直接符号链接、硬链接、目录和未保存编辑。目录权限、并发进程及 Windows 上的文件替换竞争仍受宿主文件系统约束。
-- 工作区必须受信任。不要在来源不明的项目中随意信任工作区或运行任意配置的程序。
+- Codex is launched with direct process arguments and `shell: false`. Automatic lookup ignores empty or relative PATH entries; a configured executable path must be absolute.
+- The extension uses a restricted named permission profile and disables inherited shell, MCP, app, and other integrations. Model instructions limit it to explaining supplied material. Codex versions or administrator configuration can affect capabilities; connection errors do not trigger a fallback to broader permissions. The extension is not an operating-system sandbox independent of Codex.
+- Model text is not trusted to create executable command links. Hover actions use a separate command allowlist. The Webview uses a content security policy and escaped rendering, without remote scripts.
+- Notes are written only after you click Save. They are appended only to ordinary `.md` files. Direct symlinks, hard links, directories, and files with unsaved edits are rejected. Directory permissions, concurrent processes, and file-replacement races on Windows remain subject to the host filesystem.
+- The workspace must be trusted. Do not trust unknown projects or run arbitrarily configured executables.
 
-## 仓库和安装包
+## Repository and package
 
-仓库不提交本机测试配置、日志、登录文件、截图中的本机目录、生成的协议或旧 VSIX。安装包由显式文件清单生成，不打包测试、缓存或用户设置。
+Local test configuration, logs, sign-in files, screenshots containing local paths, generated protocols, and old VSIX files are not committed. An explicit file list controls the package contents and excludes tests, caches, and user settings.
 
-## 报告问题
+## Reporting issues
 
-不要在公开 Issue 上传 Token、私钥、原始敏感源码或含凭据的日志。对于安全问题，优先使用仓库的私密漏洞报告功能（若已启用）；否则先提交不含漏洞利用细节和敏感内容的联系请求。
+Do not upload tokens, private keys, sensitive source code, or credential-bearing logs to public issues. For security issues, prefer the repository's private vulnerability-reporting feature if enabled; otherwise open a contact request without exploit details or sensitive content.
 
-目前只验证本地 Windows VS Code 与文档所列 Codex 版本；这不是第三方渗透测试或形式化安全证明。
+Only local Windows VS Code and the documented Codex version have been verified. This is not a third-party penetration test or formal security proof.

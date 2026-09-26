@@ -34,18 +34,18 @@ function activate(extensionContext) {
   }
   function hoverFor(record) {
     const title = new vscode.MarkdownString();
-    title.appendMarkdown('### Codex 代码讲解\n\n');
+    title.appendMarkdown('### Codex Code Explainer\n\n');
     const model = record.session?.settings;
-    title.appendText(`${path.basename(record.uri.fsPath)} · L${record.range.start.line + 1}–${record.range.end.line + 1}${model ? ` · ${model.model} / ${model.effort}${model.fast ? ' / 快速' : ''}` : ''}`);
+    title.appendText(`${path.basename(record.uri.fsPath)} · L${record.range.start.line + 1}–${record.range.end.line + 1}${model ? ` · ${model.model} / ${model.effort}${model.fast ? ' / fast' : ''}` : ''}`);
     const body = new vscode.MarkdownString();
     body.isTrusted = false;
     body.supportHtml = false;
     for (const [index, message] of record.messages.entries()) {
       if (message.role === 'user') {
-        if (index > 0) body.appendMarkdown(`\n\n---\n\n**追问**\n\n${safeMarkdown(message.text)}\n\n`);
+        if (index > 0) body.appendMarkdown(`\n\n---\n\n**Follow-up**\n\n${safeMarkdown(message.text)}\n\n`);
       } else if (message.text) {
         body.appendMarkdown(`${safeMarkdown(message.text)}\n\n`);
-        if (!message.complete) body.appendMarkdown(message.interrupted ? '*此回答未完成。*\n\n' : '*正在生成…*\n\n');
+        if (!message.complete) body.appendMarkdown(message.interrupted ? '*This answer is incomplete.*\n\n' : '*Generating…*\n\n');
       }
     }
     if (record.status) body.appendMarkdown(`\n\n*${safeMarkdown(record.status)}*`);
@@ -53,10 +53,10 @@ function activate(extensionContext) {
     const bar = new vscode.MarkdownString('', true);
     bar.isTrusted = { enabledCommands: actions };
     const link = (label, action) => commandLink(label, `codexExplain.hover.${action}`, record.id);
-    const links = record.busy ? [link('$(debug-stop) 停止', 'stop')] : [link('$(comment-discussion) 追问', 'ask'), link('$(quote) 引用片段追问', 'quote'), link('$(bookmark) 保存笔记', 'save'), link('$(settings-gear) 设置', 'options')];
-    if (record.lastRequest && !record.busy) links.push(link('$(refresh) 重试', 'retry'));
-    if (!record.busy) links.push(link('$(close) 清除本次讲解', 'forget'));
-    bar.appendMarkdown(links.join('　'));
+    const links = record.busy ? [link('$(debug-stop) Stop', 'stop')] : [link('$(comment-discussion) Follow up', 'ask'), link('$(quote) Follow up with quote', 'quote'), link('$(bookmark) Save note', 'save'), link('$(settings-gear) Settings', 'options')];
+    if (record.lastRequest && !record.busy) links.push(link('$(refresh) Retry', 'retry'));
+    if (!record.busy) links.push(link('$(close) Clear explanation', 'forget'));
+    bar.appendMarkdown(links.join(' · '));
     return new vscode.Hover([title, bar, body], record.range);
   }
   extensionContext.subscriptions.push(vscode.languages.registerHoverProvider([{ scheme: 'file' }, { scheme: 'untitled' }, { scheme: 'vscode-remote' }], {
@@ -83,7 +83,7 @@ function activate(extensionContext) {
     if (!valid(record) || record.busy) return;
     record.busy = true;
     record.error = '';
-    record.status = 'Codex 正在讲解；完成后在这里显示。';
+    record.status = 'Codex is generating an explanation; it will appear here when complete.';
     record.lastRequest = { prompt, label };
     const response = { role: 'assistant', text: '', complete: false };
     record.messages.push({ role: 'user', text: label, complete: true }, response);
@@ -91,9 +91,9 @@ function activate(extensionContext) {
     try {
       await connect(record);
       if (!valid(record)) return;
-      if (record.cancelRequested) throw new Error('已停止。');
+      if (record.cancelRequested) throw new Error('Stopped.');
       const input = !record.session.threadId && record.messages.length > 2
-        ? `${initialPrompt(record.source)}\n\n此前已完成的对话（数据）：\n${JSON.stringify(completedMessages(record.messages))}\n\n当前问题：${prompt}` : prompt;
+        ? `${initialPrompt(record.source)}\n\nEarlier completed conversation (data):\n${JSON.stringify(completedMessages(record.messages))}\n\nCurrent question: ${prompt}` : prompt;
       response.text = await record.session.run(input, text => { if (valid(record)) response.text = text; });
       response.complete = true;
       record.lastRequest = null;
@@ -104,14 +104,14 @@ function activate(extensionContext) {
       record.status = '';
       if (valid(record)) {
         await reveal(record);
-        if (!eligible(record) && !record.error) vscode.window.setStatusBarMessage('Codex 讲解已完成，悬停原选区即可查看。', 7000);
+        if (!eligible(record) && !record.error) vscode.window.setStatusBarMessage('Codex explanation is ready. Hover over the original selection to view it.', 7000);
       }
     }
   }
   async function explain() {
-    if (!vscode.workspace.isTrusted) throw new Error('请先信任当前工作区。');
+    if (!vscode.workspace.isTrusted) throw new Error('Trust the current workspace first.');
     const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.selection.isEmpty) throw new Error('请先框选需要解释的代码。');
+    if (!editor || editor.selection.isEmpty) throw new Error('Select the code to explain first.');
     const uri = editor.document.uri;
     const range = new vscode.Range(editor.selection.start, editor.selection.end);
     const version = editor.document.version;
@@ -120,10 +120,10 @@ function activate(extensionContext) {
     for (const record of records.values()) if (record.uri.toString() === uri.toString() && record.range.isEqual(range)) forget(record);
     while (records.size >= 8) {
       const idle = [...records.values()].find(record => !record.busy);
-      if (!idle) throw new Error('已有 8 个讲解正在运行，请先停止一个。');
+      if (!idle) throw new Error('Eight explanations are already running. Stop one first.');
       forget(idle);
     }
-    const record = { id: randomUUID(), uri, range, version, messages: [], busy: true, status: '正在读取选区附近的定义和类型…' };
+    const record = { id: randomUUID(), uri, range, version, messages: [], busy: true, status: 'Reading definitions and types near the selection…' };
     records.set(record.id, record);
     await reveal(record, true);
     collecting.add(uri.toString());
@@ -132,46 +132,46 @@ function activate(extensionContext) {
       if (!valid(record) || editor.document.version !== version) { forget(record); return; }
     } catch (error) { forget(record); throw error; }
     finally { collecting.delete(uri.toString()); record.busy = false; }
-    await answer(record, initialPrompt(record.source), '解释选区的来源、结构和用法');
+    await answer(record, initialPrompt(record.source), "Explain the selection's origin, structure, and usage");
   }
   async function ask(record, withQuote = false) {
     if (record.busy) return;
     let quote = '';
     if (withQuote) {
       const choices = quoteChoices(record.messages);
-      if (!choices.length) throw new Error('讲解完成后才能选择引用片段。');
-      const choice = await vscode.window.showQuickPick(choices, { title: '选择要追问的讲解片段', placeHolder: '可输入关键词筛选', matchOnDetail: true });
+      if (!choices.length) throw new Error('Wait for the explanation to finish before choosing a quote.');
+      const choice = await vscode.window.showQuickPick(choices, { title: 'Choose a passage to quote', placeHolder: 'Type to filter passages', matchOnDetail: true });
       if (!choice || !valid(record)) { await reveal(record, true); return; }
       quote = choice.quote;
     }
-    const text = await vscode.window.showInputBox({ title: withQuote ? '引用片段追问 · Codex' : '追问 · Codex', prompt: quote ? quote.slice(0, 220) : '继续解释当前选区，不改变源代码', placeHolder: '例如：这个参数是谁传进来的？', ignoreFocusOut: true, validateInput: text => text.length > 8000 ? '请将追问限制在 8000 字符以内。' : undefined });
+    const text = await vscode.window.showInputBox({ title: withQuote ? 'Quoted follow-up · Codex' : 'Follow-up · Codex', prompt: quote ? quote.slice(0, 220) : 'Explain this selection further without changing the source code', placeHolder: 'For example: Who passes this parameter?', ignoreFocusOut: true, validateInput: text => text.length > 8000 ? 'Limit the follow-up to 8,000 characters.' : undefined });
     if (!text?.trim() || !valid(record)) { await reveal(record, true); return; }
     const question = redact(text.trim());
-    await answer(record, followupPrompt(question, quote), quote ? `引用：${quote}\n\n${question}` : question);
+    await answer(record, followupPrompt(question, quote), quote ? `Quote: ${quote}\n\n${question}` : question);
   }
   async function options(record) {
     if (record.busy || !record.connected) return;
     const session = record.session;
     const selection = await vscode.window.showQuickPick([
-      { label: '$(symbol-misc) 模型', key: 'model', description: session.settings.model },
-      { label: '$(settings) 思考强度', key: 'effort', description: session.settings.effort },
-      { label: '$(zap) 快速模式', key: 'fast', description: session.settings.fast ? '已开启' : '已关闭' },
-      { label: '$(notebook) 笔记路径', key: 'notes' }
-    ], { title: 'Codex 讲解设置', placeHolder: '修改后对下一次提问生效' });
+      { label: '$(symbol-misc) Model', key: 'model', description: session.settings.model },
+      { label: '$(settings) Reasoning effort', key: 'effort', description: session.settings.effort },
+      { label: '$(zap) Fast mode', key: 'fast', description: session.settings.fast ? 'On' : 'Off' },
+      { label: '$(notebook) Note path', key: 'notes' }
+    ], { title: 'Codex explanation settings', placeHolder: 'Changes apply to the next question' });
     if (!selection || !valid(record)) { await reveal(record, true); return; }
     const next = { ...session.settings };
     if (selection.key === 'notes') { await vscode.commands.executeCommand('codexExplain.settings'); return; }
     if (selection.key === 'model') {
-      const picked = await vscode.window.showQuickPick(session.models.map(model => ({ label: model.displayName || model.model, description: model.model, model })), { title: '选择模型' });
+      const picked = await vscode.window.showQuickPick(session.models.map(model => ({ label: model.displayName || model.model, description: model.model, model })), { title: 'Select model' });
       if (picked) { next.model = picked.model.model; next.effort = picked.model.defaultReasoningEffort; next.fast = next.fast && supportsFast(picked.model); }
     } else if (selection.key === 'effort') {
       const model = session.models.find(m => m.model === next.model);
-      const picked = await vscode.window.showQuickPick(model.supportedReasoningEfforts.map(e => ({ label: e.reasoningEffort, detail: e.description })), { title: '选择思考强度' });
+      const picked = await vscode.window.showQuickPick(model.supportedReasoningEfforts.map(e => ({ label: e.reasoningEffort, detail: e.description })), { title: 'Select reasoning effort' });
       if (picked) next.effort = picked.label;
     } else {
       const model = session.models.find(m => m.model === next.model);
-      if (!supportsFast(model)) { vscode.window.showInformationMessage('当前模型未声明支持快速模式。'); await reveal(record, true); return; }
-      const picked = await vscode.window.showQuickPick([{ label: '开启', value: true, detail: '使用快速服务档位，可能增加额度消耗。' }, { label: '关闭', value: false }], { title: '快速模式' });
+      if (!supportsFast(model)) { vscode.window.showInformationMessage('The current model does not advertise fast mode.'); await reveal(record, true); return; }
+      const picked = await vscode.window.showQuickPick([{ label: 'On', value: true, detail: 'Uses the fast service tier and may consume more quota.' }, { label: 'Off', value: false }], { title: 'Fast mode' });
       if (picked) next.fast = picked.value;
     }
     if (!valid(record)) return;
@@ -182,11 +182,11 @@ function activate(extensionContext) {
   async function save(record) {
     if (record.busy) return;
     const complete = completedMessages(record.messages);
-    if (!complete.some(m => m.role === 'assistant')) throw new Error('请先完成一次讲解。');
+    if (!complete.some(m => m.role === 'assistant')) throw new Error('Complete an explanation first.');
     const id = noteId(record.source, complete);
-    if (record.savedId === id) { vscode.window.setStatusBarMessage('这份讲解已经保存。', 4000); return; }
+    if (record.savedId === id) { vscode.window.setStatusBarMessage('This explanation has already been saved.', 4000); return; }
     record.busy = true;
-    record.status = '正在整理精简笔记…';
+    record.status = 'Preparing a short note…';
     record.error = '';
     await reveal(record);
     try {
@@ -194,29 +194,29 @@ function activate(extensionContext) {
       const folder = vscode.workspace.getWorkspaceFolder(record.uri);
       let configured = configuration.get('notesPath', '').trim();
       if (!configured) {
-        const chosen = await vscode.window.showSaveDialog({ title: '选择 Markdown 笔记（追加保存）', filters: { Markdown: ['md'] }, defaultUri: folder ? vscode.Uri.joinPath(folder.uri, 'notes', '代码讲解.md') : undefined });
+        const chosen = await vscode.window.showSaveDialog({ title: 'Choose a Markdown note (append only)', filters: { Markdown: ['md'] }, defaultUri: folder ? vscode.Uri.joinPath(folder.uri, 'notes', 'code-explanations.md') : undefined });
         if (!chosen) return;
-        if (chosen.scheme !== 'file') throw new Error('请指定当前扩展宿主上的本地 Markdown 文件。');
+        if (chosen.scheme !== 'file') throw new Error('Choose a local Markdown file on the current extension host.');
         configured = chosen.fsPath;
         await configuration.update('notesPath', configured, folder ? vscode.ConfigurationTarget.WorkspaceFolder : vscode.ConfigurationTarget.Global);
       }
       const destination = path.isAbsolute(configured) ? configured : folder?.uri.scheme === 'file' ? path.resolve(folder.uri.fsPath, configured) : null;
-      if (!destination || !/\.md$/i.test(destination)) throw new Error('请设置有效的 .md 文件路径。');
+      if (!destination || !/\.md$/i.test(destination)) throw new Error('Set a valid .md file path.');
       function ensureSaved() {
-        if (vscode.workspace.textDocuments.some(doc => doc.uri.scheme === 'file' && path.resolve(doc.uri.fsPath).toLowerCase() === destination.toLowerCase() && doc.isDirty)) throw new Error('笔记存在未保存编辑，请先保存该文件。');
+        if (vscode.workspace.textDocuments.some(doc => doc.uri.scheme === 'file' && path.resolve(doc.uri.fsPath).toLowerCase() === destination.toLowerCase() && doc.isDirty)) throw new Error('The note has unsaved edits. Save it first.');
       }
       ensureSaved();
       await connect(record);
       if (!valid(record)) return;
-      if (record.cancelRequested) throw new Error('已停止。');
+      if (record.cancelRequested) throw new Error('Stopped.');
       if (record.noteCache?.id !== id) record.noteCache = { id, text: await record.session.run(notePrompt(complete), () => {}, { fresh: true }) };
       if (!valid(record)) return;
       ensureSaved();
       await appendNote(destination, record.source, record.noteCache.text, id);
       record.savedId = id;
-      record.status = '精简笔记已保存。';
-      vscode.window.setStatusBarMessage(`Codex 笔记已追加：${destination}`, 6000);
-    } finally { record.busy = false; record.cancelRequested = false; if (record.status === '正在整理精简笔记…') record.status = ''; await reveal(record); }
+      record.status = 'Short note saved.';
+      vscode.window.setStatusBarMessage(`Codex note appended: ${destination}`, 6000);
+    } finally { record.busy = false; record.cancelRequested = false; if (record.status === 'Preparing a short note…') record.status = ''; await reveal(record); }
   }
   function register(command, handler) {
     extensionContext.subscriptions.push(vscode.commands.registerCommand(command, async (...args) => {

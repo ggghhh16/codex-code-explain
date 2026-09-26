@@ -16,9 +16,9 @@ function activate(extensionContext) {
     let session;
     let panel;
     try {
-      if (!vscode.workspace.isTrusted) throw new Error('请先信任当前工作区。');
+      if (!vscode.workspace.isTrusted) throw new Error('Trust the current workspace first.');
       const editor = vscode.window.activeTextEditor;
-      if (!editor) throw new Error('请在代码编辑器中框选需要解释的内容。');
+      if (!editor) throw new Error('Select content to explain in the code editor.');
       const sourceUri = editor.document.uri;
       const sourceSelection = editor.selection;
       const folder = vscode.workspace.getWorkspaceFolder(sourceUri);
@@ -29,7 +29,7 @@ function activate(extensionContext) {
       const sessionDirectory = path.join(extensionContext.globalStorageUri.fsPath, 'sessions');
       await fs.mkdir(sessionDirectory, { recursive: true });
       session = new CodexSession(executable, sessionDirectory);
-      panel = vscode.window.createWebviewPanel('codexExplain', `讲解 · ${path.basename(sourceUri.fsPath)}`, vscode.ViewColumn.Beside, {
+      panel = vscode.window.createWebviewPanel('codexExplain', `Explanation · ${path.basename(sourceUri.fsPath)}`, vscode.ViewColumn.Beside, {
         enableScripts: true, retainContextWhenHidden: true,
         localResourceRoots: [vscode.Uri.joinPath(extensionContext.extensionUri, 'media')]
       });
@@ -43,8 +43,8 @@ function activate(extensionContext) {
       const messages = [];
       const completedMessages = () => messages.filter((message, index) => message.complete && (message.role === 'assistant' || messages[index + 1]?.role === 'assistant' && messages[index + 1].complete));
       const send = message => { if (!disposed) panel.webview.postMessage(message); };
-      const report = error => send({ type: 'error', text: redact(error.message || String(error)) + (!initialized ? ' 请关闭此讲解，检查 Codex 登录和程序路径后重新打开。' : ''), canRetry: !!lastRequest });
-      const update = () => send({ type: 'state', source, messages, busy, settings: session.settings, models: session.models, saved: savedId === noteId(source, completedMessages()), notesPath: vscode.workspace.getConfiguration('codexExplain', sourceUri).get('notesPath') || '首次保存时选择文件' });
+      const report = error => send({ type: 'error', text: redact(error.message || String(error)) + (!initialized ? ' Close this explanation, check Codex sign-in and the executable path, then reopen it.' : ''), canRetry: !!lastRequest });
+      const update = () => send({ type: 'state', source, messages, busy, settings: session.settings, models: session.models, saved: savedId === noteId(source, completedMessages()), notesPath: vscode.workspace.getConfiguration('codexExplain', sourceUri).get('notesPath') || 'Choose a file on first save' });
       panel.onDidDispose(() => { disposed = true; session.dispose(); panels.delete(panel); });
       async function answer(prompt, label) {
         if (busy || !initialized) return;
@@ -64,32 +64,32 @@ function activate(extensionContext) {
       async function saveNote() {
         if (busy || !initialized) return;
         const complete = completedMessages();
-        if (!complete.some(m => m.role === 'assistant')) throw new Error('先完成一次讲解，再保存笔记。');
+        if (!complete.some(m => m.role === 'assistant')) throw new Error('Complete an explanation before saving a note.');
         const id = noteId(source, complete);
-        if (savedId === id) { send({ type: 'notice', text: '这份讲解已保存。' }); return; }
+        if (savedId === id) { send({ type: 'notice', text: 'This explanation is already saved.' }); return; }
         busy = true;
         update();
         try {
           let configured = vscode.workspace.getConfiguration('codexExplain', sourceUri).get('notesPath', '').trim();
           let destination;
           if (!configured) {
-            const chosen = await vscode.window.showSaveDialog({ title: '选择代码讲解笔记（追加，不覆盖）', filters: { Markdown: ['md'] }, defaultUri: folder ? vscode.Uri.joinPath(folder.uri, 'notes', '代码讲解.md') : undefined });
+            const chosen = await vscode.window.showSaveDialog({ title: 'Choose a code explanation note (append, do not overwrite)', filters: { Markdown: ['md'] }, defaultUri: folder ? vscode.Uri.joinPath(folder.uri, 'notes', 'code-explanations.md') : undefined });
             if (!chosen) return;
-            if (chosen.scheme !== 'file') throw new Error('首版笔记保存支持当前扩展宿主上的本地 Markdown 文件。');
+            if (chosen.scheme !== 'file') throw new Error('This release saves notes to a local Markdown file on the current extension host.');
             configured = chosen.fsPath;
             await vscode.workspace.getConfiguration('codexExplain', sourceUri).update('notesPath', configured, folder ? vscode.ConfigurationTarget.WorkspaceFolder : vscode.ConfigurationTarget.Global);
           }
           if (path.isAbsolute(configured)) destination = configured;
           else if (folder?.uri.scheme === 'file') destination = path.resolve(folder.uri.fsPath, configured);
-          else throw new Error('请在插件设置中填写笔记文件的绝对路径。');
-          if (!/\.md$/i.test(destination)) throw new Error('笔记路径必须以 .md 结尾。');
-          if (vscode.workspace.textDocuments.some(doc => doc.uri.scheme === 'file' && path.resolve(doc.uri.fsPath).toLowerCase() === path.resolve(destination).toLowerCase() && doc.isDirty)) throw new Error('笔记文件存在尚未保存的编辑，请先保存该文件再追加。');
-          send({ type: 'notice', text: '正在整理来源、结构、用法…' });
+          else throw new Error('Set an absolute note file path in extension settings.');
+          if (!/\.md$/i.test(destination)) throw new Error('The note path must end in .md.');
+          if (vscode.workspace.textDocuments.some(doc => doc.uri.scheme === 'file' && path.resolve(doc.uri.fsPath).toLowerCase() === path.resolve(destination).toLowerCase() && doc.isDirty)) throw new Error('The note has unsaved edits. Save it before appending.');
+          send({ type: 'notice', text: 'Preparing origin, structure, and usage…' });
           if (noteCache?.id !== id) noteCache = { id, text: await session.run(notePrompt(complete), () => {}, { fresh: true }) };
-          if (vscode.workspace.textDocuments.some(doc => doc.uri.scheme === 'file' && path.resolve(doc.uri.fsPath).toLowerCase() === path.resolve(destination).toLowerCase() && doc.isDirty)) throw new Error('笔记文件在整理期间被编辑，请先保存文件再重试；已整理的内容会保留。');
+          if (vscode.workspace.textDocuments.some(doc => doc.uri.scheme === 'file' && path.resolve(doc.uri.fsPath).toLowerCase() === path.resolve(destination).toLowerCase() && doc.isDirty)) throw new Error('The note was edited during preparation. Save the file and retry; the prepared content will be retained.');
           const appended = await appendNote(destination, source, noteCache.text, id);
           savedId = id;
-          send({ type: 'notice', text: appended ? `已追加笔记：${destination}` : '这份笔记已经存在，没有重复追加。' });
+          send({ type: 'notice', text: appended ? `Note appended: ${destination}` : 'This note already exists and was not appended again.' });
         } finally { busy = false; update(); }
       }
       panel.webview.onDidReceiveMessage(async message => {
@@ -99,28 +99,28 @@ function activate(extensionContext) {
             update();
             if (initialized || busy) return;
             busy = true;
-            send({ type: 'notice', text: '正在连接本机 Codex…' });
+            send({ type: 'notice', text: 'Connecting to local Codex…' });
             update();
             try { await session.connect(extensionContext.globalState.get('modelSettings', {})); initialized = true; }
             finally { busy = false; update(); }
-            await answer(initialPrompt(source), '解释这段代码的来源、结构和用法');
+            await answer(initialPrompt(source), "Explain this code's origin, structure, and usage");
           } else if (message.type === 'ask' && typeof message.text === 'string' && message.text.trim()) {
-            if (message.text.length > 8000 || (message.quote?.length || 0) > 12000) throw new Error('追问或引用过长，请缩短。');
+            if (message.text.length > 8000 || (message.quote?.length || 0) > 12000) throw new Error('The follow-up or quote is too long. Shorten it.');
             const text = redact(message.text.trim());
             const quote = typeof message.quote === 'string' ? redact(message.quote) : '';
-            await answer(followupPrompt(text, quote), quote ? `引用：${quote}\n\n${text}` : text);
+            await answer(followupPrompt(text, quote), quote ? `Quote: ${quote}\n\n${text}` : text);
           } else if (message.type === 'settings' && !busy && initialized) {
             session.settings = validateSettings(session.models, message.settings || {});
             await extensionContext.globalState.update('modelSettings', session.settings);
             update();
-            send({ type: 'notice', text: '已设置，下次提问生效。' });
+            send({ type: 'notice', text: 'Settings saved; they apply to the next question.' });
           } else if (message.type === 'cancel') { await session.cancel(); }
           else if (message.type === 'save') await saveNote();
           else if (message.type === 'retry' && lastRequest && !busy) await answer(lastRequest.prompt, lastRequest.label);
           else if (message.type === 'openSettings') await vscode.commands.executeCommand('codexExplain.settings');
           else if (message.type === 'source') {
             const current = await vscode.workspace.openTextDocument(sourceUri);
-            if (current.version !== source.documentVersion) vscode.window.showInformationMessage('源码已变化，讲解对应的是此前选区快照。');
+            if (current.version !== source.documentVersion) vscode.window.showInformationMessage('The source has changed; this explanation refers to an earlier selection snapshot.');
             const shown = await vscode.window.showTextDocument(current, { viewColumn: vscode.ViewColumn.One, preserveFocus: false });
             shown.selection = sourceSelection;
             shown.revealRange(sourceSelection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);

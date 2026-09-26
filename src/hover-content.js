@@ -10,7 +10,7 @@ function quoteChoices(messages) {
   const options = [];
   for (const message of messages.filter(m => m.role === 'assistant' && m.complete)) {
     for (const text of message.text.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean)) {
-      options.push({ label: text.replace(/[#*`\r\n]/g, ' ').slice(0, 110), description: `第 ${options.length + 1} 段`, detail: text.slice(0, 350), quote: text });
+      options.push({ label: text.replace(/[#*`\r\n]/g, ' ').slice(0, 110), description: `Passage ${options.length + 1}`, detail: text.slice(0, 350), quote: text });
     }
   }
   return options;

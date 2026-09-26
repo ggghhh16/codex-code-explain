@@ -1,26 +1,31 @@
-# 更新记录
+# Changelog
+
+## 0.2.4
+
+- Changed the Marketplace display name and description to English and updated the in-extension name to Codex Code Explainer.
+- Translated the README, documentation, commands, settings, interface, and default explanations to English; kept a Simplified Chinese README.
 
 ## 0.2.3
 
-- 补充 Marketplace 展示信息和更新记录。
-- 添加官方打包工具使用的文件白名单，排除开发工具、测试数据与本机配置。
-- Marketplace 发布者标识使用 `Principia`；此前手动安装的 `local-learning` 版本需先卸载，避免两个版本同时启用。
+- Added Marketplace listing metadata and a changelog.
+- Added an explicit package allowlist for the official packaging tool, excluding development tools, test data, and local configuration.
+- Changed the Marketplace publisher ID to `Principia`. Uninstall earlier manually installed `local-learning` versions to avoid duplicate commands.
 
 ## 0.2.2
 
-- 精简文档和讲解提示词，保留来源、结构、用法、追问与 Markdown 笔记。
+- Simplified documentation and explanation prompts while retaining origin, structure, usage, follow-ups, and Markdown notes.
 
 ## 0.2.1
 
-- 扩展敏感内容隐藏规则，工作区外文件使用简短来源标签。
-- 拒绝相对可执行路径及不安全的笔记链接文件。
-- 增加安全回归测试与发布内容检查。
+- Expanded sensitive-content redaction and shortened labels for files outside the workspace.
+- Rejected relative executable paths and unsafe note targets.
+- Added security regression tests and publication-content checks.
 
 ## 0.2.0
 
-- 默认使用代码附近的原生悬停框，并保留语言服务提示。
-- 支持追问、引用片段提问、模型设置与笔记保存。
+- Moved explanations into the native hover near selected code while retaining language-service hints.
+- Added follow-ups, quoted passage questions, model settings, and note saving.
 
 ## 0.1.0
 
-- 首次提供选区代码讲解及可选并排面板。
+- Introduced explanations for selected code and an optional side-by-side panel.

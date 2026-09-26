@@ -1,8 +1,8 @@
 {
   "name": "codex-code-explain",
-  "displayName": "Codex 代码讲解",
-  "description": "选中代码，用 Codex 解释来源、结构和用法，局部追问并保存 Markdown 笔记。",
-  "version": "0.2.3",
+  "displayName": "Codex Code Explainer",
+  "description": "Explain selected code with Codex using nearby context and available definitions. Ask follow-up questions and save Markdown notes.",
+  "version": "0.2.4",
   "repository": { "type": "git", "url": "https://github.com/ggghhh16/codex-code-explain.git" },
   "homepage": "https://github.com/ggghhh16/codex-code-explain#readme",
   "bugs": { "url": "https://github.com/ggghhh16/codex-code-explain/issues" },
@@ -10,7 +10,7 @@
   "license": "MIT",
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Education", "Other"],
-  "keywords": ["codex", "code explanation", "hover", "代码讲解", "笔记"],
+  "keywords": ["codex", "code explanation", "hover", "code explainer", "Markdown notes"],
   "galleryBanner": { "color": "#111827", "theme": "dark" },
   "main": "./src/extension.js",
   "extensionKind": ["workspace"],
@@ -19,18 +19,18 @@
   "scripts": { "test": "node --test test/*.test.js", "package": "python scripts/package.py" },
   "contributes": {
     "commands": [
-      { "command": "codexExplain.explain", "title": "用 Codex 解释", "category": "Codex 代码讲解" },
-      { "command": "codexExplain.explainInPanel", "title": "在并排面板中解释（旧版界面）", "category": "Codex 代码讲解" },
-      { "command": "codexExplain.settings", "title": "打开插件设置", "category": "Codex 代码讲解" }
+      { "command": "codexExplain.explain", "title": "Explain with Codex", "category": "Codex Code Explainer" },
+      { "command": "codexExplain.explainInPanel", "title": "Explain in Side Panel (Legacy)", "category": "Codex Code Explainer" },
+      { "command": "codexExplain.settings", "title": "Open Extension Settings", "category": "Codex Code Explainer" }
     ],
     "menus": { "editor/context": [{ "command": "codexExplain.explain", "when": "editorHasSelection && isWorkspaceTrusted", "group": "navigation@20" }] },
     "configuration": {
-      "title": "Codex 代码讲解",
+      "title": "Codex Code Explainer",
       "properties": {
-        "codexExplain.notesPath": { "type": "string", "default": "", "scope": "resource", "markdownDescription": "Markdown 笔记文件的绝对路径，或相对于当前代码所属工作区的路径，例如 `notes/代码讲解.md`。留空时首次保存会弹出文件选择器。只追加，不覆盖原文。" },
-        "codexExplain.codexPath": { "type": "string", "default": "", "scope": "machine", "description": "Codex 可执行文件路径。留空时自动查找 PATH、Codex 桌面版及官方 VS Code 扩展附带的程序。" },
-        "codexExplain.contextLines": { "type": "integer", "default": 35, "minimum": 0, "maximum": 150, "description": "选区前后各附带的代码行数。" },
-        "codexExplain.maxContextCharacters": { "type": "integer", "default": 24000, "minimum": 4000, "maximum": 80000, "description": "选区、附近代码和语言服务结果的总字符上限。超出时明确标注截断。" }
+        "codexExplain.notesPath": { "type": "string", "default": "", "scope": "resource", "markdownDescription": "Absolute path to a Markdown note file, or a path relative to the current code workspace, such as `notes/code-explanations.md`. If empty, the first save opens a file picker. Notes are appended, never overwritten." },
+        "codexExplain.codexPath": { "type": "string", "default": "", "scope": "machine", "description": "Path to the native Codex executable. If empty, searches PATH, Codex desktop, and the official VS Code extension." },
+        "codexExplain.contextLines": { "type": "integer", "default": 35, "minimum": 0, "maximum": 150, "description": "Number of code lines included before and after the selection." },
+        "codexExplain.maxContextCharacters": { "type": "integer", "default": 24000, "minimum": 4000, "maximum": 80000, "description": "Maximum combined characters for the selection, nearby code, and language-service results. Truncation is marked explicitly." }
       }
     }
   }

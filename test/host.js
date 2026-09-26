@@ -21,10 +21,10 @@ async function run() {
         assert.ok(prompt.includes('selection'));
         const context = JSON.parse(prompt.slice(prompt.indexOf('{')));
         assert.ok(context.definitions.length > 0, 'real language service returns definition');
-        assert.ok(!context.types.some(text => text.includes('Codex 代码讲解')), 'our hover must not contaminate language-service context');
+        assert.ok(!context.types.some(text => text.includes('Codex Code Explainer')), 'our hover must not contaminate language-service context');
         let chunks = 0;
         const text = await originalRun.call(this, prompt, value => { chunks++; onText(value); }, options);
-        assert.ok(text.includes('来源')); assert.ok(text.includes('结构')); assert.ok(text.includes('用法'));
+        assert.ok(text.includes('Origin')); assert.ok(text.includes('Structure')); assert.ok(text.includes('Usage'));
         resolveResult({ activated: true, contextIncluded: true, definitions: context.definitions.length, types: context.types.length, chunks, characters: text.length });
         return text;
       } catch (error) { rejectResult(error); throw error; }
@@ -34,18 +34,18 @@ async function run() {
     await extension.activate();
     assert.ok((await vscode.commands.getCommands(true)).includes('codexExplain.explain'));
     const fixturePath = path.join(root, 'artifacts', 'example.js');
-    await fs.writeFile(fixturePath, 'function greet(name = "世界") { return `你好，${name}`; }\nconst message = greet("小明");\n');
+    await fs.writeFile(fixturePath, 'function greet(name = "world") { return `Hello, ${name}`; }\nconst message = greet("Alex");\n');
     const document = await vscode.workspace.openTextDocument(vscode.Uri.file(fixturePath));
     const editor = await vscode.window.showTextDocument(document);
     editor.selection = new vscode.Selection(1, 16, 1, 21);
     await vscode.commands.executeCommand('vscode.executeDefinitionProvider', document.uri, editor.selection.start);
     const tabsBefore = vscode.window.tabGroups.all.flatMap(group => group.tabs).length;
     await vscode.commands.executeCommand('codexExplain.explain');
-    const result = await Promise.race([completed, new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error('VS Code 端到端讲解未在 120 秒内完成')), 120000); })]);
+    const result = await Promise.race([completed, new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error('VS Code end-to-end explanation did not finish within 120 seconds')), 120000); })]);
     const hovers = await vscode.commands.executeCommand('vscode.executeHoverProvider', document.uri, editor.selection.start);
-    const ownHover = hovers.find(hover => hover.contents.some(content => content.value?.includes('Codex 代码讲解')));
+    const ownHover = hovers.find(hover => hover.contents.some(content => content.value?.includes('Codex Code Explainer')));
     assert.ok(ownHover, 'Codex answer is in native HoverProvider');
-    assert.ok(ownHover.contents.some(content => content.value?.includes('来源')));
+    assert.ok(ownHover.contents.some(content => content.value?.includes('Origin')));
     assert.ok(hovers.length >= 2, 'native language hover is preserved');
     assert.equal(vscode.window.tabGroups.all.flatMap(group => group.tabs).length, tabsBefore, 'no new editor tab');
     assert.ok(!vscode.window.tabGroups.all.flatMap(group => group.tabs).some(tab => tab.input instanceof vscode.TabInputWebview), 'no webview panel');
@@ -54,7 +54,7 @@ async function run() {
     result.hoverProviders = hovers.length;
     await fs.writeFile(resultPath, JSON.stringify(result, null, 2));
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-    console.log('PASS: 真实 Codex 回答位于原生 Hover，保留语言服务提示，无新标签页或 Webview。');
+    console.log('PASS: Real Codex answer appears in native hover alongside language-service hints, without a new tab or Webview.');
   } catch (error) {
     await fs.writeFile(resultPath, JSON.stringify({ failed: error.message }));
     throw error;

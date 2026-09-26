@@ -14,17 +14,17 @@ test('model markdown cannot produce executable links or remote images; code synt
   assert.ok(!safeMarkdown('`unterminated ![x](https://example.com/x)').includes('![x]'));
 });
 test('trusted action URI carries only the opaque session id', () => {
-  const link = commandLink('保存', 'codexExplain.hover.save', 'id/中文');
+  const link = commandLink('Save', 'codexExplain.hover.save', 'id/Chinese');
   const encoded = link.match(/\?([^)]*)/)[1];
-  assert.deepEqual(JSON.parse(decodeURIComponent(encoded)), ['id/中文']);
+  assert.deepEqual(JSON.parse(decodeURIComponent(encoded)), ['id/Chinese']);
 });
 test('quote and note exclude unfinished answers and unanswered questions', () => {
   const messages = [
-    { role: 'user', text: '解释', complete: true },
-    { role: 'assistant', text: '来源：项目。\n\n用法：传入参数。', complete: true },
-    { role: 'user', text: '新的追问', complete: true },
-    { role: 'assistant', text: '未写完', complete: false }
+    { role: 'user', text: 'Explain', complete: true },
+    { role: 'assistant', text: 'Origin: project.\n\nUsage: pass a parameter.', complete: true },
+    { role: 'user', text: 'New follow-up', complete: true },
+    { role: 'assistant', text: 'Incomplete', complete: false }
   ];
   assert.equal(completedMessages(messages).length, 2);
-  assert.deepEqual(quoteChoices(messages).map(x => x.quote), ['来源：项目。', '用法：传入参数。']);
+  assert.deepEqual(quoteChoices(messages).map(x => x.quote), ['Origin: project.', 'Usage: pass a parameter.']);
 });

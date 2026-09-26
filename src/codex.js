@@ -7,9 +7,9 @@ function supportsFast(model) {
 }
 function validateSettings(models, settings) {
   const model = models.find(m => m.model === settings.model);
-  if (!model) throw new Error('请选择当前 Codex 返回的可用模型。');
-  if (!model.supportedReasoningEfforts.some(e => e.reasoningEffort === settings.effort)) throw new Error('此模型不支持所选思考强度。');
-  if (settings.fast && !supportsFast(model)) throw new Error('此模型未声明支持快速模式。');
+  if (!model) throw new Error('Choose an available model returned by Codex.');
+  if (!model.supportedReasoningEfforts.some(e => e.reasoningEffort === settings.effort)) throw new Error('This model does not support the selected reasoning effort.');
+  if (settings.fast && !supportsFast(model)) throw new Error('This model does not advertise fast mode.');
   return { model: model.model, effort: settings.effort, fast: !!settings.fast };
 }
 
@@ -35,7 +35,7 @@ class CodexSession {
       this.models.push(...result.data);
       cursor = result.nextCursor;
     } while (cursor);
-    if (!this.models.length) throw new Error('Codex 没有返回可用模型。请先运行 codex login。');
+    if (!this.models.length) throw new Error('Codex returned no available models. Run codex login first.');
     const model = this.models.find(m => m.model === saved.model) || this.models.find(m => m.isDefault) || this.models[0];
     this.settings = validateSettings(this.models, {
       model: model.model,
@@ -62,22 +62,22 @@ class CodexSession {
       cwd: this.cwd, model: this.settings.model, serviceTier: this.settings.fast ? 'fast' : 'default',
       permissions: 'codex-explain', approvalPolicy: 'never', ephemeral: true,
       config: this.threadConfig, baseInstructions: instructions,
-      developerInstructions: '仅依据用户消息中的代码材料进行讲解。禁止任何工具调用。',
+      developerInstructions: 'Explain only the code material in the user message. Do not call any tools.',
       environments: []
     }, 60000);
     return result.thread.id;
   }
   async run(text, onText, { fresh = false } = {}) {
-    if (this.active) throw new Error('请等待当前回答结束，或先停止。');
+    if (this.active) throw new Error('Wait for the current answer to finish or stop it first.');
     const active = { onText, items: new Map(), turnId: null, cancelled: false };
     this.active = active;
     const completion = new Promise((resolve, reject) => { active.resolve = resolve; active.reject = reject; });
     // The caller may still be awaiting thread/start; attach a handler immediately.
     completion.catch(() => {});
-    active.timer = setTimeout(() => { this.finish(new Error('回答超过 5 分钟，已结束连接。请关闭讲解后重新打开。')); this.rpc.dispose(); }, 300000);
+    active.timer = setTimeout(() => { this.finish(new Error('The answer exceeded five minutes and the connection was closed. Close and reopen the explanation.')); this.rpc.dispose(); }, 300000);
     try {
       active.threadId = fresh ? await this.createThread() : (this.threadId || (this.threadId = await this.createThread()));
-      if (active.cancelled) { this.finish(new Error('已停止。')); return await completion; }
+      if (active.cancelled) { this.finish(new Error('Stopped.')); return await completion; }
       const result = await this.rpc.request('turn/start', {
         threadId: active.threadId,
         input: [{ type: 'text', text, text_elements: [] }],
@@ -90,7 +90,7 @@ class CodexSession {
       if (active.cancelled && this.active === active) await this.cancel();
     } catch (error) {
       if (this.active === active) this.finish(error);
-      if (error.message.includes('请求超时')) this.rpc.dispose();
+      if (error.message.includes('request timed out')) this.rpc.dispose();
     }
     return completion;
   }
@@ -109,8 +109,8 @@ class CodexSession {
     }
     if (method === 'turn/completed') {
       if (active.turnId && params.turn.id !== active.turnId) return;
-      if (params.turn.status === 'failed') this.finish(new Error(params.turn.error?.message || 'Codex 回答失败。'));
-      else if (params.turn.status === 'interrupted' || active.cancelled) this.finish(new Error('已停止。'));
+      if (params.turn.status === 'failed') this.finish(new Error(params.turn.error?.message || 'Codex failed to answer.'));
+      else if (params.turn.status === 'interrupted' || active.cancelled) this.finish(new Error('Stopped.'));
       else this.finish();
     }
   }
@@ -121,7 +121,7 @@ class CodexSession {
     clearTimeout(active.timer);
     const text = [...active.items.values()].join('\n\n');
     if (error) active.reject(error);
-    else if (!text.trim()) active.reject(new Error('Codex 未返回讲解内容。'));
+    else if (!text.trim()) active.reject(new Error('Codex returned no explanation.'));
     else active.resolve(text);
   }
   async cancel() {

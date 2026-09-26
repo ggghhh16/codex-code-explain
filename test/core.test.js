@@ -35,7 +35,7 @@ test('process crash rejects pending work and clears request timers', async () =>
   const rpc = new RpcClient('fake', { spawn: () => child });
   const pending = rpc.request('pending');
   child.emit('exit', 9);
-  await assert.rejects(pending, /进程已退出/);
+  await assert.rejects(pending, /Codex exited/);
   assert.equal(rpc.pending.size, 0);
 });
 test('unknown model, effort and unsupported fast mode are rejected', () => {
@@ -50,8 +50,8 @@ test('turn completion can arrive before turn/start response; late foreign events
     if (message.method === 'thread/start') reply({ id: message.id, result: { thread: { id: 't1' } } });
     if (message.method === 'turn/start') {
       reply({ method: 'item/agentMessage/delta', params: { threadId: 'foreign', turnId: 'x', itemId: 'bad', delta: 'bad' } });
-      reply({ method: 'item/agentMessage/delta', params: { threadId: 't1', turnId: 'u1', itemId: 'm1', delta: '来源' } });
-      reply({ method: 'item/completed', params: { threadId: 't1', turnId: 'u1', item: { type: 'agentMessage', id: 'm1', text: '来源：项目定义。' } } });
+      reply({ method: 'item/agentMessage/delta', params: { threadId: 't1', turnId: 'u1', itemId: 'm1', delta: 'Origin' } });
+      reply({ method: 'item/completed', params: { threadId: 't1', turnId: 'u1', item: { type: 'agentMessage', id: 'm1', text: 'Origin: project-defined.' } } });
       reply({ method: 'turn/completed', params: { threadId: 't1', turn: { id: 'u1', status: 'completed' } } });
       reply({ id: message.id, result: { turn: { id: 'u1' } } });
     }
@@ -59,24 +59,24 @@ test('turn completion can arrive before turn/start response; late foreign events
   const session = new CodexSession('fake', os.tmpdir(), { spawn: () => child });
   session.settings = { model: 'test', effort: 'medium', fast: false };
   const text = await session.run('test', () => {});
-  assert.equal(text, '来源：项目定义。'); assert.equal(session.active, null);
+  assert.equal(text, 'Origin: project-defined.'); assert.equal(session.active, null);
   session.dispose();
 });
 test('notes append without overwriting and deduplicate concurrent saves', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'codex-explain-test-'));
   const filename = path.join(directory, 'notes.md');
   try {
-    await fs.writeFile(filename, '# 原有笔记\n');
+    await fs.writeFile(filename, '# Existing notes\n');
     const source = { file: 'test.js', selection: { startLine: 1, endLine: 2 } };
     const id = noteId(source, ['answer']);
-    const results = await Promise.all([appendNote(filename, source, '来源：项目。', id), appendNote(filename, source, '来源：项目。', id)]);
+    const results = await Promise.all([appendNote(filename, source, 'Origin: project.', id), appendNote(filename, source, 'Origin: project.', id)]);
     assert.deepEqual(results, [true, false]);
     const text = await fs.readFile(filename, 'utf8');
-    assert.ok(text.startsWith('# 原有笔记\n')); assert.equal(text.split('<!-- codex-explain:').length, 2);
+    assert.ok(text.startsWith('# Existing notes\n')); assert.equal(text.split('<!-- codex-explain:').length, 2);
     await assert.rejects(appendNote(path.join(directory, 'notes.txt'), source, 'x', 'x'), /\.md/);
   } finally { await fs.rm(directory, { recursive: true, force: true }); }
 });
 test('credential files and common literal secrets are excluded', () => {
   assert.equal(isSensitiveFile('/x/.env.local'), true); assert.equal(isSensitiveFile('/x/index.ts'), false);
-  assert.equal(redact('api_key = "secret-value"'), 'api_key = "[已隐藏凭据]"');
+  assert.equal(redact('api_key = "secret-value"'), 'api_key = "[credential redacted]"');
 });

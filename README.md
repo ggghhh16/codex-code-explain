@@ -1,59 +1,59 @@
-# Codex 代码讲解
+# Codex Code Explainer
 
-独立开发的第三方 VS Code 扩展，非 OpenAI / Microsoft 官方产品。版本：**0.2.3**。
+A third-party VS Code extension developed independently of OpenAI and Microsoft. Version **0.2.4**.
 
-[下载安装包](https://github.com/ggghhh16/codex-code-explain/releases/latest) · [安全与数据说明](SECURITY.md)
+[Download the latest VSIX](https://github.com/ggghhh16/codex-code-explain/releases/latest) · [简体中文 README](README.zh-CN.md) · [Security and data handling](SECURITY.md)
 
-在 VS Code 中框选函数、变量、参数或数据，右键 **用 Codex 解释**。从 0.2.0 起，讲解直接出现在选区附近的 **原生悬停框** 中，与原来的类型提示共存，不打开新标签页或并排面板。
+Select a function, variable, parameter, or data structure in VS Code and choose **Explain with Codex** from the context menu. Since 0.2.0, explanations appear in VS Code's native hover near the selection, alongside existing type information. No new editor tab or side panel opens.
 
-## 安装和使用
+## Install and use
 
-1. 安装并登录本机 Codex CLI，或使用 Codex 桌面版附带的程序。扩展复用 Codex 登录，不保存或展示 Token。
-2. 从 Releases 下载最新的 `.vsix` 安装包，然后 VS Code → 扩展 → 右上角菜单 → **从 VSIX 安装**；如提示重载，执行重载窗口。
-3. 在受信任工作区打开代码，选中一段，右键 **用 Codex 解释**。
-4. 讲解完成后，在悬停框中点击 **追问**，使用 VS Code 原生输入框提问。回答仍显示在原选区的悬停框中。
-5. 点击 **引用片段追问**，选择已完成回答中的一段，再输入问题。点击 **设置**，选择模型、思考档位或快速模式。
-6. 点击 **保存笔记**，生成来源、结构、用法的简要笔记，追加到 `.md` 文件。未设置路径时弹出文件选择器。
-7. 悬停框关闭后，将鼠标放回选区即可查看已有讲解，不重新调用模型。也可使用 VS Code 的“显示或聚焦悬停”命令（通常为 `Ctrl+K`、`Ctrl+I`）。修改源码或关闭文件会清除该文件的旧讲解。
+1. Install and sign in to the local Codex CLI, or use the executable bundled with Codex desktop. The extension uses your existing Codex sign-in and does not store or display tokens.
+2. Download the latest `.vsix` from Releases. In VS Code, open Extensions → **⋯** → **Install from VSIX**, then reload if prompted.
+3. Open code in a trusted workspace, select a passage, and right-click **Explain with Codex**.
+4. When the explanation is ready, click **Follow up** in the hover and enter a question in VS Code's input box. The answer appears in the same hover.
+5. Click **Follow up with quote** to choose a passage from a completed answer, then ask a question. Use **Settings** to choose the model, reasoning effort, or fast mode.
+6. Click **Save note** to generate a short note about origin, structure, and usage and append it to a Markdown file. If no path is configured, a file picker opens.
+7. To revisit an explanation after closing the hover, hover over the original selection. This reads the cache without another model request. You can also run VS Code's **Show or Focus Hover** command (usually `Ctrl+K`, `Ctrl+I`). Editing or closing a file clears its previous explanations.
 
-旧版并排界面保留在命令面板 **Codex 代码讲解：在并排面板中解释（旧版界面）**，只有显式执行这个命令才打开。
+The former side-by-side interface is available only through the explicit command **Codex Code Explainer: Explain in Side Panel (Legacy)**.
 
-0.2.3 起发布者标识为 `Principia`。如果安装过发布者为 `local-learning` 的早期 VSIX，请先卸载旧扩展再安装新版，避免同时出现两组命令。
+Since 0.2.3, the publisher ID is `Principia`. If you installed an older VSIX published as `local-learning`, uninstall it before installing the current version to avoid duplicate commands.
 
-## 设置
+## Settings
 
-VS Code 设置中搜索 `Codex 代码讲解`：
+Search for `Codex Code Explainer` in VS Code Settings:
 
-| 设置 | 用途 |
+| Setting | Purpose |
 | --- | --- |
-| `codexExplain.notesPath` | `.md` 绝对路径或相对当前代码工作区的路径；留空时首次保存选择 |
-| `codexExplain.codexPath` | 原生 Codex 程序绝对路径；留空自动查找 |
-| `codexExplain.contextLines` | 选区前后代码行数，默认各 35 行 |
-| `codexExplain.maxContextCharacters` | 代码材料字符上限，默认 24000 |
+| `codexExplain.notesPath` | Absolute Markdown path or path relative to the current code workspace; a file picker opens on first save when empty |
+| `codexExplain.codexPath` | Absolute path to the native Codex executable; automatically detected when empty |
+| `codexExplain.contextLines` | Lines of code before and after the selection; default: 35 each |
+| `codexExplain.maxContextCharacters` | Character limit for code context; default: 24,000 |
 
-模型列表、思考强度和快速模式支持情况来自当前 Codex 返回的模型目录。切换在下一次提问生效；快速模式使用真实 `serviceTier: fast`，不是降低思考强度。服务档位可能增加额度消耗，具体由账户决定。不修改用户的全局 Codex 配置。
+Available models, reasoning efforts, and fast mode support come from the current Codex model catalog. Changes apply to the next question. Fast mode sends the actual `serviceTier: fast` setting; it does not reduce reasoning effort. It may consume more account quota. The extension does not change your global Codex configuration.
 
-## 上下文与数据处理
+## Context and data handling
 
-每个选区开启独立的临时 Codex 对话。发送选区快照、有限附近代码，以及最多四个不同标识符的语言服务定义和类型。工作区外的文件只使用 `external/文件名` 标签。只在右键命令、明确追问或主动生成笔记时调用模型，普通悬停只读取缓存。语言服务缺失时明确标注缺少定义；运行时数据无法仅凭类型提示确认。
+Each selection starts an independent, temporary Codex conversation. The extension sends a snapshot of the selection, limited nearby code, and definitions and types from VS Code language services for up to four distinct identifiers. Files outside the workspace use short `external/filename` labels. Model requests happen only when you run the context-menu command, explicitly follow up, or save a note. Ordinary hovering reads cached content. Missing language-service definitions are identified as missing; runtime values cannot be inferred from types alone.
 
-Codex 使用只读、受限读取的会话，并禁用继承的命令、MCP 和应用集成；扩展本身从 VS Code 语言服务收集材料。模型输出中的 HTML、远程图片和命令链接不会执行。常见凭据文件不发送，常见密钥字面量会隐藏；这不是完整的敏感信息识别器，源码仍按本机 Codex 账户和服务提供方的规则传输。
+Codex runs with a restricted, read-only permission profile and inherited shell, MCP, and app integrations disabled. The extension itself collects context through VS Code language services. Model-supplied HTML, remote images, and command links are not executed. Common credential files are excluded and common key literals are redacted. These filters cannot detect every secret; source code is still processed under your local Codex account and service provider's terms.
 
-## 当前边界
+## Current limitations
 
-- 原生悬停框允许格式化文字和命令链接，不能嵌入自定义输入框、滑条或旁挂设置窗。因此追问与设置使用 VS Code 原生输入框/选择菜单；窗口位置与缩放由 VS Code 管理。
-- 原生 Hover 的文字选区不对普通扩展开放，引用使用“选择回答片段”，不是直接读取鼠标框选的文字。若必须保留全部原位控件，需要编辑器本体开发，详见[可行性说明](docs/native-hover-feasibility.md)。
-- 原生 Hover 没有公开的逐字更新接口；生成期间显示状态，完成后刷新。在等待期间重新悬停可读取当前已生成的内容，不主动高频关闭和重开窗口。
-- 缓存最多保留 8 个选区；关闭悬停框不会删除缓存，关闭文件、编辑内容或清除讲解会结束对应会话。重新启动 VS Code 不恢复聊天。
-- 官方 Codex 扩展的回答不能被本插件直接框选接管；引用追问只支持本插件自己的回答。
-- 首版面向本地 VS Code 桌面工作区。未验证 Remote SSH、WSL、容器和网页 VS Code。
-- 笔记仅追加。文件有未保存编辑时拒绝追加，避免覆盖编辑内容；跨多个 VS Code 窗口同时保存同一笔记不保证去重。
-- 若连接失败，请检查 Codex 登录和程序路径，再点击悬停框中的重试。
-- 模型正文不允许创建可执行命令链接；扩展自身生成的操作栏单独使用命令白名单。
+- Native hover supports formatted text and command links, but cannot host a custom input field, slider, or attached settings pane. Follow-ups and settings use VS Code's native input and selection menus; VS Code controls hover placement and size.
+- Extensions cannot read text selected inside the native hover through a general public API. Quoting uses a choice of answer passages rather than direct mouse selection. See the [feasibility notes](docs/native-hover-feasibility.md).
+- Native hover has no public token-by-token update API. A status appears during generation and the hover refreshes when the answer finishes. Rehovering while waiting can show content generated so far.
+- Up to eight selections are cached. Closing the hover retains the cache; closing the file, editing it, or clearing an explanation ends its session. Conversations do not persist across VS Code restarts.
+- This extension cannot take over selected text from the official Codex extension. Quoted follow-ups work only with this extension's answers.
+- The initial release targets local VS Code desktop workspaces. Remote SSH, WSL, containers, and web VS Code have not been verified.
+- Notes are append-only. Appending is refused when the file has unsaved edits. Deduplication across separate VS Code windows is not guaranteed.
+- If the connection fails, check Codex sign-in and the executable path, then click **Retry** in the hover.
+- Model-generated text cannot create executable command links; the extension's own action bar uses a separate command allowlist.
 
-## 开发
+## Development
 
-无需安装运行时 npm 依赖。VS Code 打开本目录，按 F5 启动扩展开发宿主。
+There are no runtime npm dependencies. Open this directory in VS Code and press F5 to launch an Extension Development Host.
 
 ```powershell
 node --test test/*.test.js
@@ -65,18 +65,18 @@ node scripts/native-ui-test.js
 python scripts/package.py
 ```
 
-真实生成测试会使用本机 Codex 账户额度，仅发送脚本内置的非敏感示例代码。`host-test.js` 验证真实代码到 Codex 回答、原生 Hover 和没有新增标签页。`native-ui-test.js` 使用固定回答验证真实 VS Code 悬停框里的点击操作并生成截图；它需要 Playwright，可通过 `PLAYWRIGHT_MODULE` 指向安装目录。所有 VS Code 测试都使用隔离配置并在结束后退出。旧界面的测试脚本为 `scripts/ui-test.js`。打包脚本生成标准 VSIX。
+Live generation tests consume quota from your local Codex account and send only the scripts' built-in, non-sensitive sample code. `host-test.js` checks a real code-to-Codex response, native hover, and the absence of extra tabs. `native-ui-test.js` clicks controls in a real VS Code hover using a fixed answer and saves screenshots. It requires Playwright; set `PLAYWRIGHT_MODULE` to its installation path if needed. VS Code tests use isolated configurations and exit afterward. `scripts/ui-test.js` tests the legacy interface. The packaging script builds a standard VSIX.
 
-Marketplace 发布使用微软官方工具打包：`npx @vscode/vsce package --no-dependencies`。`.vscodeignore` 限定发布文件范围；提交前确认 `package.json` 中的 `publisher` 是当前账号拥有的发布者 ID。
+For Marketplace publishing, use Microsoft's official packager: `npx @vscode/vsce package --no-dependencies`. `.vscodeignore` limits published files. Confirm that `package.json` uses a publisher ID you own before release.
 
-[需求评估与设计](docs/design.md) · [验证记录](docs/validation.md)
+[Design notes](docs/design.md) · [Validation record](docs/validation.md)
 
-主要文件：`src/native-hover.js` 负责原生 Hover、命令与生命周期，`hover-content.js` 负责安全渲染和引用片段，`context.js` 收集材料，`codex.js` 管理临时对话，`rpc.js` 处理 App Server 协议，`notes.js` 追加笔记。`panel-extension.js` 与 `media/` 为可选旧版界面。
+Key files: `src/native-hover.js` handles native hover, commands, and lifecycle; `src/hover-content.js` handles safe rendering and quote choices; `src/context.js` gathers context; `src/codex.js` manages temporary conversations; `src/rpc.js` implements the App Server protocol; and `src/notes.js` appends notes. `src/panel-extension.js` and `media/` implement the optional legacy interface.
 
-## 设计依据
+## References
 
 - [Codex App Server](https://learn.chatgpt.com/docs/app-server)
-- [Codex 配置参考](https://learn.chatgpt.com/docs/config-file/config-reference)
+- [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
 - [VS Code Webview](https://code.visualstudio.com/api/extension-guides/webview)
 - [VS Code HoverProvider](https://code.visualstudio.com/api/references/vscode-api#HoverProvider)
-- 本机 Codex `app-server generate-ts --experimental` 生成的协议（实现时版本：`0.155.0-alpha.16`）。
+- Protocol generated locally by `codex app-server generate-ts --experimental` (implementation version: `0.155.0-alpha.16`).

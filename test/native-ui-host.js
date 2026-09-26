@@ -12,14 +12,14 @@ async function run() {
   const originalRun = CodexSession.prototype.run;
   const calls = [];
   CodexSession.prototype.connect = async function() {
-    this.models = [{ model: 'ui-test', displayName: '界面测试模型', defaultReasoningEffort: 'medium', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: '简短解释' }, { reasoningEffort: 'medium', description: '标准解释' }], serviceTiers: [{ id: 'fast' }] }];
+    this.models = [{ model: 'ui-test', displayName: 'UI test model', defaultReasoningEffort: 'medium', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Short explanation' }, { reasoningEffort: 'medium', description: 'Standard explanation' }], serviceTiers: [{ id: 'fast' }] }];
     this.settings = { model: 'ui-test', effort: 'medium', fast: false };
     return { models: this.models, settings: this.settings };
   };
   CodexSession.prototype.run = async function(prompt, onText, options) {
     this.threadId = 'ui-thread';
     calls.push({ prompt, options, settings: { ...this.settings } });
-    const text = options?.fresh ? '### 来源\n`greet` 是项目定义的函数。\n### 结构\n`name` 默认值为字符串。\n### 用法\n调用时返回问候语。' : calls.length === 1 ? '### 来源\n`greet` 是这个文件定义的函数；`name` 是项目自己命名的参数。\n\n### 结构\n参数由调用者传入；省略时使用 `"世界"`。函数返回一个字符串。\n\n### 用法\n`greet("小明")` 把 `"小明"` 传给 `name`，返回 `"你好，小明"`。这里只调用函数，没有打印。' : '可以改名。把函数中的 `name` 和模板字符串里的 `${name}` 一起改成 `person`，调用处的 `greet("小明")` 不需要改变。';
+    const text = options?.fresh ? '### Origin\nThe project defines `greet`.\n### Structure\nThe default for `name` is a string.\n### Usage\nCalling it returns a greeting.' : calls.length === 1 ? '### Origin\nThis file defines `greet`; the project chose the parameter name `name`.\n\n### Structure\nThe caller passes the parameter; when omitted, it uses `"world"`. The function returns a string.\n\n### Usage\n`greet("Alex")` passes `"Alex"` to `name` and returns `"Hello, Alex"`. This only calls the function; it does not print.' : 'It can be renamed. Change `name` in the function and `${name}` in the template string to `person`; the `greet("Alex")` call need not change.';
     onText(text);
     await fs.writeFile(path.join(directory, 'calls.json'), JSON.stringify(calls));
     return text;
@@ -29,10 +29,10 @@ async function run() {
     await vscode.workspace.getConfiguration('window').update('zoomLevel', 0, vscode.ConfigurationTarget.Global);
     await vscode.workspace.getConfiguration('workbench').update('colorTheme', 'Default Dark Modern', vscode.ConfigurationTarget.Global);
     await vscode.workspace.getConfiguration('codexExplain').update('notesPath', path.join(directory, 'notes.md'), vscode.ConfigurationTarget.Global);
-    const extension = vscode.extensions.getExtension('local-learning.codex-code-explain');
+    const extension = vscode.extensions.getExtension('Principia.codex-code-explain');
     await extension.activate();
     const filename = path.join(directory, 'example.js');
-    await fs.writeFile(filename, '// 框选调用里的函数名 → 右键「用 Codex 解释」\n\nfunction greet(name = "世界") {\n  return `你好，${name}`;\n}\n\nconst message = greet("小明");\n');
+    await fs.writeFile(filename, '// Select the function name in the call, then choose Explain with Codex\n\nfunction greet(name = "world") {\n  return `Hello, ${name}`;\n}\n\nconst message = greet("Alex");\n');
     const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filename));
     const editor = await vscode.window.showTextDocument(document);
     editor.selection = new vscode.Selection(6, 16, 6, 21);

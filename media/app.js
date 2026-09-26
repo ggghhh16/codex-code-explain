@@ -7,7 +7,7 @@
   let quote = '';
   let selectedQuote = '';
   let settingsOpen = false;
-  const effortNames = { none: '关闭', minimal: '最少', low: '低', medium: '中', high: '高', xhigh: '很高', max: '最高', ultra: 'Ultra' };
+  const effortNames = { none: 'None', minimal: 'Minimal', low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Very high', max: 'Maximum', ultra: 'Ultra' };
   const escapeHtml = value => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   // Restricted Markdown: raw HTML, images, command URIs and remote links are never interpreted.
   function inline(text) {
@@ -42,7 +42,7 @@
       element.className = `message ${message.role}${message.role === 'assistant' && !message.complete && !message.interrupted ? ' streaming' : ''}`;
       element.dataset.role = message.role;
       if (element.dataset.content !== message.text || element.dataset.interrupted !== String(!!message.interrupted)) {
-        if (message.role === 'assistant') element.innerHTML = markdown(message.text) + (message.interrupted ? '<span class="partial">回答未完成，可重试。</span>' : '');
+        if (message.role === 'assistant') element.innerHTML = markdown(message.text) + (message.interrupted ? '<span class="partial">Answer incomplete; you can retry.</span>' : '');
         else element.textContent = message.text;
         element.dataset.content = message.text;
         element.dataset.interrupted = String(!!message.interrupted);
@@ -70,11 +70,11 @@
     updateEffort();
     $('fast').setAttribute('aria-checked', String(!!state.settings?.fast));
     $('fast').disabled = state.busy || !supportsFast(model);
-    $('fast-description').textContent = supportsFast(model) ? (model.serviceTiers?.find(t => t.id === 'fast')?.description || '使用 Codex 的快速服务档位，可能增加额度消耗。') : '当前模型未声明支持快速模式。';
+    $('fast-description').textContent = supportsFast(model) ? (model.serviceTiers?.find(t => t.id === 'fast')?.description || "Uses Codex's fast service tier and may consume more quota.") : 'The current model does not advertise fast mode.';
     $('model').disabled = state.busy;
     $('effort').disabled = state.busy || efforts.length < 2;
     $('model-badge').textContent = model?.displayName || 'Codex';
-    $('notes-path').textContent = state.notesPath || '首次保存时选择文件';
+    $('notes-path').textContent = state.notesPath || 'Choose a file on first save';
   }
   function placeSettings() {
     if (!settingsOpen) return;
@@ -107,15 +107,15 @@
       state = data;
       const source = state.source;
       $('source-name').textContent = `${source.file} : ${source.selection.startLine}–${source.selection.endLine}`;
-      $('context-count').textContent = `${source.definitions.length} 处定义`;
+      $('context-count').textContent = `${source.definitions.length} definitions`;
       $('context-content').textContent = JSON.stringify(source, null, 2);
       $('send').disabled = state.busy || !state.settings;
       $('save').disabled = state.busy || !state.messages.some(m => m.role === 'assistant' && m.complete);
       $('save').classList.toggle('active', !!state.saved);
-      $('save').title = state.saved ? '本次讲解已保存' : '保存精简笔记';
+      $('save').title = state.saved ? 'This explanation is saved' : 'Save short note';
       $('stop').hidden = !state.busy;
       $('retry').disabled = state.busy;
-      $('status').textContent = state.busy ? 'Codex 正在处理…' : state.saved ? '已保存精简笔记 · 可继续追问' : '选中讲解文字，添加引用后继续追问';
+      $('status').textContent = state.busy ? 'Codex is working…' : state.saved ? 'Short note saved · You can keep asking' : 'Select explanation text to quote in a follow-up';
       renderSettings(); renderMessages(); placeSettings();
     } else if (data.type === 'delta') {
       const message = state.messages.find(m => m.id === data.id);
